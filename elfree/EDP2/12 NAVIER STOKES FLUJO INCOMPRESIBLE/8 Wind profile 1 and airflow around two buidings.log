@@ -1,0 +1,558 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\12 NAVIER STOKES FLUJO INCOMPRESIBLE\8 Wind profile 1 and airflow around two buidings.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /*
+    2 : Data here to obtain wind profile are
+    3 :         SOLAR RADIATION 0 w/m2  (night time)
+    4 :         Wind at 10 meter on the ground, terrain = 4,0 m/s
+    5 :
+    6 : then running with matlab the file perfil_viento.m we obtain
+    7 :          u* = u friction= friction velocity = 1.0539
+    8 :        L = -704.9502 Monin-Obukhov length
+    9 :
+   10 : k = 0.41  Von Karman constant, sometimes is used 0.4
+   11 :
+   12 :  u ( z ) = (ufriction/k)*(log(z/z0)+(4.7/L)*(z-z0))
+   13 :
+   14 : Pasquill stability class : "Atmósfera ligeramente estable"
+   15 :
+   16 : Longitud de Monin-Obukhov:
+   17 :
+   18 : L = 1/(a + b*log10(z0))
+   19 : L = 1/(0.0040-0.0180*log10(2.000000))
+   20 : L = -704.950199  Monin-Obukhov length
+   21 :
+   22 : */
+   23 :
+   24 : real L = -704.9502; // Monin-Obukhov length
+   25 : real ufriction= 1.0539;
+   26 :
+   27 : real zo= 2; // roughness height , data
+   28 :
+   29 :
+   30 : border a(t=-20,10){ x=t; y=2; label=2;}
+   31 :
+   32 : /* it is right to choise lower level of the simulation
+   33 : at vertical = y= zo */
+   34 :
+   35 : border b(t=2,10){ x=10; y=t; label=2;}
+   36 : border c(t=10,30){ x=t; y=10; label=2;}
+   37 : border d(t=10,2){ x=30; y=t; label=2;}
+   38 : border e(t=30,50){ x=t; y=2; label=2;}
+   39 :
+   40 : // second facade
+   41 : border f(t=2,5) { x=50; y=t; label=2;}
+   42 : border g(t=50,70){ x=t; y=5; label=2;}
+   43 : border h(t=5,2){ x=70; y=t; label=2;}
+   44 :
+   45 : border k(t=70,120) { x=t; y=2; label=2;}
+   46 : border l(t=2,30) { x=120; y=t; label=3;}  // outlet air
+   47 : border m(t=120,-20) {x=t; y=30; label=2;}
+   48 :
+   49 : border r(t=30,2) {x=-20; y=t; label=1;}     // inlet air
+   50 :
+   51 :
+   52 : int n=20;
+   53 : mesh Th= buildmesh(a(n)+b(n)+c(n*3)+d(n)+e(4*n)+f(n*3)+g(n*3)+h(n*3)+k(4*n)+ l(n)+ m(4*n)+ r(4*n)) ;
+   54 :
+   55 : plot(Th,wait=1);
+   56 :
+   57 :
+   58 : // aprox tmax = 140 / 7 = 20 seconds
+   59 :
+   60 : real tmax=20;
+   61 :
+   62 : real nu = 0.000016; // air cinematic viscosity  m2/s for 30 ºC,
+   63 :
+   64 : real dt = 0.01;  // a veces es necesario considerar 0.001
+   65 :
+   66 : real t;
+   67 : int iter;
+   68 : iter=0;
+   69 :
+   70 : /*
+   71 :
+   72 : Chorin algorithm improved  to solve Navier Stokes
+   73 :
+   74 : ***********************************************************  */
+   75 :
+   76 : fespace Vh(Th,P1);
+   77 : Vh w,u, v =0, p = 0, q=0; // w funcion test elementos finitos
+   78 : real area= int2d(Th)(1.);
+ *** Warning  The identifier area hide a Global identifier
+ 
+   79 :
+   80 :
+   81 : for(t=0;t<tmax;t+=dt)
+   82 : {
+   83 :         iter=iter+1;
+   84 :         Vh uold = u, vold = v, pold=p;
+   85 :         Vh f=convect([uold,vold],-dt,uold), g=convect([uold,vold],-dt,vold);
+   86 :
+   87 :         solve pb4u(u,w,init=n,solver=LU)
+   88 :         = int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+   89 :         - int2d(Th)((f/dt-dx(p))*w)
+   90 :         + on(1,u = (ufriction/.41)*log(y/zo)+(4.7*(y-zo)/L))+
+   91 :         on(2,u = 0)+ on(3,u=f);
+   92 : // label 3 es contorno de salida del aire
+   93 :
+   94 :
+   95 :         solve pb4v(v,w,init=n,solver=LU)
+   96 :         = int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+   97 :         - int2d(Th)((g/dt-dy(p))*w)
+   98 :         + on(1,2,v = 0);
+   99 :
+  100 :         real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+  101 :
+  102 :         solve pb4p(q,w,init=n,solver=LU)
+  103 :         = int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+  104 :         - int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)
+  105 :         + on(3,q=0);
+  106 :
+  107 :         real meanpq = int2d(Th)(pold - q)/area;
+  108 :
+  109 :         if(iter%10)// plotea cada 10 iteraciones
+  110 :
+  111 :         plot([u,v],cmm=" tiempo ="+t,value=1);
+  112 :         p = pold-q-meanpq;
+  113 :         u = u + dx(q)*dt;
+  114 :         v = v + dy(q)*dt;
+  115 :
+  116 : }
+  117 :
+  118 : // ************* end of Chorin algorithm************************
+  119 :
+  120 :
+  121 : /* check for the maximum velocity at the top, here
+  122 :
+  123 : height building is 50 meters */
+  124 :  sizestack + 1024 =6568  ( 5544 )
+ 
+  --  mesh:  Nb of Triangles =  15693, Nb of Vertices 8167
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.70989  max 6.73702
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min 0  max 0
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -39946  max -8.62746e-31
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -8.85688e-28  max 25.6308
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -16.1168  max 19.2331
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.614047  max 37678.9
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.13338  max 14.7762
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -10.81  max 12.8496
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.99685  max 3691.98
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.15309  max 11.3017
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -9.62748  max 10.2951
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -801.462  max 3.52189
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.48238  max 10.7127
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -8.77729  max 9.07784
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -315.145  max 0.0604672
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.04499  max 9.71081
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -8.03353  max 8.15747
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -51.2516  max 1.26912
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.06797  max 9.34256
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.57478  max 7.8471
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0769349  max 67.1512
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.07842  max 9.45978
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.3593  max 8.0202
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0102054  max 61.2024
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.0234  max 9.27903
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.27868  max 8.09125
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.6567  max 23.5687
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.00115  max 9.38307
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.20341  max 8.05345
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -30.1751  max 0.363437
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.969444  max 9.49696
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.02724  max 7.97149
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -30.6531  max 0.0548091
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.924907  max 9.50581
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -6.7109  max 7.89786
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -17.1864  max 0.153612
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.850705  max 9.41895
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -6.31572  max 7.83752
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.98221  max 15.1296
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.747449  max 9.30003
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.97881  max 7.78022
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.619908  max 20.5766
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.64565  max 9.2055
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.75329  max 7.72984
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.70592  max 15.8216
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.614531  max 9.15771
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.61568  max 7.70041
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -6.1146  max 7.7375
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.706718  max 9.14426
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.50626  max 7.70101
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -6.07354  max 6.63787
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.731571  max 9.13594
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.53754  max 7.72418
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.87572  max 7.44495
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.737571  max 9.11074
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.54942  max 7.75349
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.283661  max 10.3505
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.706552  max 9.0657
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.51956  max 7.77252
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.63253  max 9.77228
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.662888  max 9.01247
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.45904  max 7.77379
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.66171  max 4.86511
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.631132  max 8.96476
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.38331  max 7.75927
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.94615  max 1.15282
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.623373  max 8.9292
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.30678  max 7.73582
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -10.7077  max 0.0948925
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.639381  max 8.90261
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.23939  max 7.71021
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -10.4012  max 0.00845275
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.671679  max 8.87627
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.18471  max 7.68642
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -6.61153  max 0.15407
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.711873  max 8.84283
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.1402  max 7.66532
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.45016  max 4.14305
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.755149  max 8.80034
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.09903  max 7.64579
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.234791  max 8.85802
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.800451  max 8.75189
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -5.0533  max 7.62597
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0370472  max 10.2394
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.846511  max 8.70286
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.99843  max 7.6044
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0255102  max 7.92371
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.890908  max 8.65756
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.93441  max 7.58079
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -1.35647  max 3.9559
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.929129  max 8.61743
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.86487  max 7.55604
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.78878  max 0.330039
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.955999  max 8.58111
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.79446  max 7.53205
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.5253  max 0.23123
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.968611  max 8.54564
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.72427  max 7.51117
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -8.56382  max 0.0973102
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.966687  max 8.50886
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.65452  max 7.49509
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -7.05344  max 0.0340076
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.955056  max 8.46988
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.59023  max 7.48444
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -3.60284  max 1.67302
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.941291  max 8.42926
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.57433  max 7.47875
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.188352  max 5.17757
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.932279  max 8.38816
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.55714  max 7.47659
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.089205  max 7.01665
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.931868  max 8.34737
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.53736  max 7.47608
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0607472  max 6.72657
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.939423  max 8.30725
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.51439  max 7.47524
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.0391687  max 4.91683
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.951934  max 8.26769
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.48824  max 7.4722
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.505711  max 2.8644
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.964573  max 8.2288
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.45816  max 7.46541
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.49577  max 1.04087
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.971868  max 8.19086
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.42447  max 7.45375
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -3.48178  max 0.194875
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.970947  max 8.16912
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.38794  max 7.43681
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -3.78377  max 0.188732
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.961826  max 8.16045
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.3491  max 7.4147
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -3.26102  max 0.706064
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.947089  max 8.15277
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.30818  max 7.38821
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -2.03399  max 1.68667
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.950425  max 8.14595
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.26527  max 7.3587
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.694307  max 2.46571
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.967544  max 8.13963
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -4.22054  max 7.32795
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.157877  max 2.71844
+  SkyLineMatrix: size pL/pU: 8167 835046 835046 moy=102.246
+  -- Solve :
+          min -0.984756  max 8.13349
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\12 NAVIER STOKES FLUJO INCOMPRESIBLE\8 Wind profile 1 and airflow around two buidings.edp

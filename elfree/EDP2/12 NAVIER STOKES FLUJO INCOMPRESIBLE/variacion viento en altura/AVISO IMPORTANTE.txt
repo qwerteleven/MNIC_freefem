@@ -1,0 +1,4 @@
+
+SOLO SE EJECUTA perfil_viento.m
+
+las demas subrutinas matlab son llamadas por esta subrutina

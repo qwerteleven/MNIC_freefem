@@ -1,0 +1,81 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puerta frigorifico dos regiones.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : // caso estacionario
+    2 :
+    3 :
+    4 : // APLICACION CALCULO DE TEMPERATURAS INTERIOR A UNA PUERTA DE DOS MATERIALES
+    5 :
+    6 : // CORCHO DANDO AL INTERIOR DE UN CONGELADOR con espesor o longitud 8 cm Y VIDRIO DANDO AL EXTERIOR con espesor
+Àýü12 cm
+    7 :
+    8 : // CONSIDERAMOS TEMPERATURA FIJA EN BORDE INTERIOR A -20 º C y AMBIEN EN BORDE EXTERIOR TEMPERATURA CTE A 25 ºC
+Àýü    9 :
+   10 : // PARA QUE LOS RESULTADOS SEAN IGUALES QUE CALCULOS EN 1D CONSIDERAMOS en LOS CONTORNOS HORIZONTALES EN ALTURA
+Àýüh= 0
+   11 : // y H= altura de la puerta , que en ambos contornos el flujo es nulo
+   12 :
+   13 : int n=2;
+   14 : //int m=140;
+   15 :
+   16 : border a (t=0,8) {x=t;y=0;label=3;};
+   17 : border b (t=8,20) {x=t;y=0;label=3;};
+   18 :
+   19 : border c (t=0,200) {x=20;y=t;label=1;};
+   20 :
+   21 : border d (t=20,8) {x=t;y=200;label=3;};
+   22 : border e (t=8,0) {x=t;y=200;label=3;};
+   23 :
+   24 : border f (t=200,0) {x=0;y=t;label=2;};
+   25 :
+   26 : border i (t=0,200) {x=8;y=t;label=4;};//interfase entre materiales (regiones,subdominios)
+   27 :
+   28 : mesh malla = buildmesh(a(8*n)+b(12*n)+c(200*n)+d(12*n)+e(8*n)+f(200*n)+i(200*n));
+   29 :
+   30 : plot(malla,wait=1);
+   31 :
+   32 : fespace Ph(malla,P1);
+   33 : Ph reg=region;                // a continuacion decimos dos regiones la region vidrio y la region corcho
+   34 :
+   35 : int vidrio = reg (12.,0.5);  // define una region que es la parte de la puerta que es de VIDRIO
+   36 :                              //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=12Àýü y=0.5
+   37 :
+   38 : int corcho = reg (4.0,0.5);  // define region correspondiente a la parte de CORCHO de la puerta
+   39 :                              // es la region de puntos (x,y) que tienen igual contorno que el del punto x=4  y=0Àýü.5
+   40 : plot (reg,fill=1);
+   41 :
+   42 : real k1,k2;
+   43 : k1=0.008;         //conductividad termica en el subdominio1     VIDRIO  (unidades es Watio/(cm ºC)
+   44 : k2=0.0004;              //conductividad termica en subdominio2  CORCHO
+   45 :
+   46 :
+   47 : fespace Vh(malla,P1); // polinomios de interpola de grado uno
+   48 : /* aconsejable cuando hay cmbio de materiales que implican dvalores numericos muy ditintos de parametros a evaluÀýüar en las integrales*/
+   49 :
+   50 : Vh u,k,v,uu;
+   51 :
+   52 : problem Calor(u,v) =
+   53 : int2d (malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))
+   54 :  + on (1,u=25)
+   55 :  + on (2,u=-20);
+   56 :
+   57 : k = k1*(region==vidrio)+k2*(region==corcho);
+   58 :
+   59 :    Calor;
+   60 :
+   61 : x=8.0;
+   62 : y=0.5;
+   63 : uu=u(x,y); // temperatura en la interfase corcho-vidrio
+   64 : cout << " u = " <<uu<<endl; // plotea en pantalla
+   65 : plot(u,nbiso=40,value=1);
+   66 :  sizestack + 1024 =2496  ( 1472 )
+ 
+  --  mesh:  Nb of Triangles =  33154, Nb of Vertices 17018
+  -- Solve :
+          min -20  max 25
+ u = 21.7039
+times: compile 0.266s, execution 2.828s,  mpirank:0
+ ######## We forget of deleting   63 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3913,  size :502272 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puerta frigorifico dos regiones.Àýüedp

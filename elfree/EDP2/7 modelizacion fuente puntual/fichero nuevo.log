@@ -1,0 +1,99 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\7 modelizacion fuente puntual\fichero nuevo.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 :  int n=60;
+    2 :
+    3 : border C(t=0, 2*pi) { x=0.25*cos(t); y=0.25*sin(t);label=1; };
+    4 :
+    5 : border aa (t=1,-1) {x=t;y=1;label=3;};
+    6 : border bb (t=1,-1) {x=-1;y=t;label=3;};
+    7 : border cc (t=-1,1) {x=t;y=-1;label=3;};
+    8 : border dd (t=-1,1) {x=1;y=t;label=3;};
+    9 :
+   10 : mesh malla = buildmesh(aa(n)+bb(n)+cc(n)+dd(n)+C(-n/2));
+   11 :
+   12 : // el contorno exterior se malla con n+1 nodos en cada lado
+   13 : // la circunferencia lleva signo menos para que interprete es un agujero,
+   14 : // es decir no hay que mallar interiormente
+   15 : // a la circunferencia c
+   16 :
+   17 : plot(malla,wait=1);
+   18 :
+   19 : border C2a(t=0, 2*pi) { x=0.8+0.0001*cos(t); y=0.8+0.0001*sin(t);label=8; };
+   20 : /* circulo de radio infinitesimal donde en el centro x=0.8  y=0.8 voy a considerar aplicado una fuente puntual d¿•∏e 100 W/m2
+   21 : */
+   22 :
+   23 : mesh mallafp = buildmesh (C2a(30)); // malla del circulo
+   24 : // mallafp es el mallado de un circulo infinitesimal que rodea a fuente puntual fp
+   25 :
+   26 : fespace Vhfp(mallafp,P2);
+   27 : Vhfp fp;// importante fp solo esta definida en la malla llamada mallaf1
+   28 :
+   29 : real AA=100; // fuente puntual aplicado en (0.8,0.8) de 100 W/m2
+   30 : real BB=400; // new
+   31 :
+   32 : real x0,y0;
+ *** Warning  The identifier y0 hide a Global identifier
+ 
+   33 : x0=0;
+   34 : y0=-0.5;
+   35 :
+   36 : border C2p(t=0, 2*pi) { x=x0+0.0001*cos(t); y=y0+0.0001*sin(t);label=9; };
+   37 : /* circulo de radio infinitesimal donde en el centro x=0.  y=-0.5 voy a considerar aplicado una fuente puntual d¿•∏e 110 W/m2
+   38 : */
+   39 :
+   40 : mesh mallafp2 = buildmesh (C2p(30)); // malla del circulo
+   41 : // mallafp es el mallado de un circulo infinitesimal que rodea a fuente puntual fp
+   42 :
+   43 : fespace Vhfp2(mallafp2,P2);
+   44 : Vhfp2 fp2;// importante fp solo esta definida en la malla llamada mallaf2
+   45 :
+   46 : real landa=1;
+   47 : fp=AA*exp(-landa*((x-0.8)^2+(y-0.8)^2));
+   48 : fp2=BB*exp(-landa*((x)^2+(y+0.5)^2)); // NEW
+   49 :
+   50 : real area1= int2d(mallafp)(1.);
+   51 : real area2= int2d(mallafp2)(1.);
+   52 :
+   53 :
+   54 : // area2 es el area del circulo infinitesimal que rodea a la fuente puntual fp2
+   55 :
+   56 : /* ahora realizo una comprobacion para ver si el radio del circulo infinitesimal se ha considerado apropiadament¿•∏e pequeÒo
+   57 : para que el promedio integral de f coincida con el valor de f en un punto que correponde al centro del circulo i¿•∏nfinitesimal */
+   58 :
+   59 : real I1;
+   60 : I1=int2d(mallafp)(fp);
+   61 : I1=I1/area1;  // I1 debe dar el valor de AA
+   62 : cout << " promedio integral de fp = " << I1 << ";\n";
+   63 :
+   64 : real kx,ky;
+   65 : kx=2;         //conductividad en direcciÛn "x"
+   66 : ky=2;           //conductividad en direcciÛn "y"
+   67 :
+   68 : fespace Vh(malla,P2);// P2 opcion de polinomios de interpolacion de Lagrange de orden 2
+   69 : Vh u,v; //v es la funcion test que al igual que la incognita u pertenecen al mismo conjunto de funciones Vh
+   70 :
+   71 : problem laplace (u,v) =
+   72 : int2d (malla) (kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
+   73 : -int2d(mallafp)((fp/area1)*v)
+   74 : -int2d(mallafp2)((fp2/area2)*v) // NEW
+   75 :
+   76 :  + on (3,u=20)
+   77 :  + on (1,u=50);
+   78 :
+   79 : laplace; //resuelve construyendo el sistema algebraico de ecuaciones
+   80 : // obteniendo la solucion en los nodos
+   81 :
+   82 : plot(u, wait=1, value=1); sizestack + 1024 =5424  ( 4400 )
+ 
+  --  mesh:  Nb of Triangles =   5740, Nb of Vertices 3005
+  --  mesh:  Nb of Triangles =    152, Nb of Vertices 92
+  --  mesh:  Nb of Triangles =    160, Nb of Vertices 96
+ promedio integral de fp = 100;
+  -- Solve :
+          min 20  max 160.489
+times: compile 0.256s, execution 0.834s,  mpirank:0
+ ######## We forget of deleting   70 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  4026,  size :507256 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\7 modelizacion fuente puntual\fichero nuevo.edp

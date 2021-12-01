@@ -1,0 +1,163 @@
+
+
+border a(t=0,10){ x=t; y=0; label=2;}   
+border b(t=0,1.7){ x=10; y=t; label=22;} // HUMAN PERSON
+border c(t=10,10.3){ x=t; y=1.70; label=22;} // HUMAN PERSON
+border d(t=1.70,0){ x=10.3; y=t; label=22;}  // HUMAN PERSON
+border e(t=10.3,20){ x=t; y=0; label=2;}   
+border f1(t=0,2) { x=20; y=t; label=3;}  // open door ,  outlet air
+border f2(t=2,4) { x=20; y=t; label=2;}  
+border g(t=20,4){ x=t; y=4; label=2;}
+
+border h(t=4,3){ x=t; y=4; label=1;}  
+// inlet air  with parabolic profile  
+
+border k1(t=3,0){ x=t; y=4; label=2;}  
+
+border l(t=4,0){ x=0; y=t; label=23;}   //
+
+ 
+
+int n=60;  
+mesh Th= buildmesh(a(n)+b(n)+c(n)+d(n)+e(2*n)+f1(n/4)+f2(n)+g(n)+h(n)+k1(n)+l(n)) ;
+plot(Th,wait=1);
+
+//****************INICIO ALGORITMO DE CHORIN ****************
+
+fespace Vh(Th,P1);
+Vh w,u, v =0, p = 0, q=0;
+
+real nu = 0.000016; // air cinematic viscosity  m2/s for 30 ºC, 
+					
+real dt = 0.02;  // 
+
+real area= int2d(Th)(1.);
+
+real tmax1=5;  // time end simulation
+real t;  
+int iter;
+iter=0;
+
+// **********************  Chorin-Rannacher algorithm to solve Navier Stokes  *****************************************
+
+// primero calculo la velocidad durante un tiempo tmax1 segundos *****************************************************
+
+
+real PI=pi;
+
+for(t=0;t<tmax1;t+=dt)
+{
+	iter=iter+1;
+	Vh uold = u, vold = v, pold=p;
+	Vh f=convect([uold,vold],-dt,uold), g=convect([uold,vold],-dt,vold);
+
+// CALCULA LA VELOCIDAD HORIZONTAL , w funcion test
+	
+solve pb4u(u,w,solver=LU)
+	= int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+	- int2d(Th)((f/dt-dx(p))*w)
+	+ on(2,u=0)+on(22,u=0)+on(1,u= 6*(x-3)*(4-x)*cos(PI/4))+ on(3,u=f)+on(23,u=0);
+	
+
+// calcular la velocidad vertical
+
+	solve pb4v(v,w,solver=LU)
+	= int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+	- int2d(Th)((g/dt-dy(p))*w)
+	+ on(1,v = -6*(x-3)*(4-x)*sin(PI/4))+on(2,v =0)+on(22,v =0)+on(23,v=0);  // corresponding label 1 air inlet because for x=3.5 
+
+	real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+
+// calcula la presion p, siendo q =-p
+	
+solve pb4p(q,w,init=n,solver=LU)
+	= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+	- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+	
+	real meanpq = int2d(Th)(pold - q)/area;
+
+	if(iter%20) {       // plotea cada 20 iteraciones
+	plot([u,v],cmm=" tiempo ="+t,value=1);}
+
+	p = pold-q-meanpq; // CALCULA DEFINITIVAMENTE LA PRESION
+	u = u + dx(q)*dt; // CALCULA COMPONENTE HZTAL VELOCIDAD
+	v = v + dy(q)*dt; // COMPONENTE VERTICAL VELOCIDAD
+		
+}
+
+// ************************* end of Chorin algorithm ************************************************************
+
+
+// ****************** ahora calulamos en cada iteracion de tiempo velocidad + temperatura ************************
+
+real tmax2=10;
+for(t=tmax1;t<tmax2;t+=dt)
+{
+	iter=iter+1;
+	Vh uold = u, vold = v, pold=p;
+	Vh f=convect([uold,vold],-dt,uold), g=convect([uold,vold],-dt,vold);
+
+	solve pb4u(u,w,init=n,solver=LU)
+	= int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+	- int2d(Th)((f/dt-dx(p))*w)
+	+ on(2,u=0)+on(22,u=0)+on(23,u=0)+on(1,u= 6*(x-3)*(4-x)*cos(PI/4))+ on(3,u=f);
+	
+
+	solve pb4v(v,w,init=n,solver=LU)
+	= int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+	- int2d(Th)((g/dt-dy(p))*w)
+	+ on(1,v = -6*(x-3)*(4-x)*sin(PI/4))+on(2,v =0)+on(22,v =0)+on(23,v=0);  // corresponding label 1 air inlet because for x=3.5 
+
+	real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+
+	solve pb4p(q,w,init=n,solver=LU)
+	= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+	- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+	
+	real meanpq = int2d(Th)(pold - q)/area;
+
+	if(iter%20) {  			// plotea cada 20 iteraciones
+	plot([u,v],cmm=" tiempo ="+t,value=1);}
+
+	p = pold-q-meanpq;
+	u = u + dx(q)*dt;
+	v = v + dy(q)*dt;
+
+// voy a calcular ahora la temperatura teniendo en cuenta el campo de velocidades 
+
+
+Vh T,vv;
+
+real k;
+
+real T0 = 20;  //Condicion Dirichlet , temp impuesta en paredes que no son la de la pared izda ni entrada ni salida del aire ni body
+
+
+real W;  // viento m/s
+W= 4;  
+real he;
+he= 5.7+3.8*W;  // coefte de convección exterior en funcion del viento
+
+// vv es funcion test elementos finitos en el problem calor ahora abajo
+
+/* despreciamos la derivada parcial de temperatura respecto del tiempo para obtener mas rapidamente la solucion estacionaria */
+
+problem calor (T,vv) = 
+// aproximamos modelo con derivada parcial respecto al tiempo nula, asi llegamos a solucion estacionaria teniendo en cuenta
+// velocidad del aire
+
+int2d(Th)(u*dx(T)*vv+v*dy(T)*vv)
++int2d(Th) (k*dx(T)*dx(vv)+k*dy(T)*dy(vv))
++int1d(Th,23) (he*T*vv) - int1d(Th,23) (he*T0*vv)  // conveccion calor entre aire exterior y pared
++on(22,T=37)+on(23,T=25)
++on(2,T=T0)+on(1,T=17);     // entrada aire a 17 ºC impulsado por el aparato aire acondicionado 
+
+//Conductividad térmica del aire
+k = 0.02;
+calor;
+
+if(iter%30) { 	
+plot(T, value=1);}
+ 
+		
+}

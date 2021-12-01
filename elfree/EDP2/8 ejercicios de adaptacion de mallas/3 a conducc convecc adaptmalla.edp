@@ -1,0 +1,67 @@
+//Definimos el dominio de estudio, creamos la malla y la dibujamos
+//----------------------------------------------------------------
+
+border a (t=0,0.6) {x=t;y=0;label=1;};
+border b (t=0,1) {x=0.6;y=t;label=2;};
+border c (t=0.6,0) {x=t;y=1;label=2;};
+border d (t=1,0) {x=0;y=t;label=3;};
+
+
+real pi2=2*pi;
+border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+
+int n=10;
+mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n)+e(-4*n));
+plot(malla, wait=1);
+
+
+//Definimos el problema que queremos resolver
+//-------------------------------------------
+fespace Vh(malla,P2);
+Vh u,v,kx,ky; // u es temperatura en grados Celsius
+
+//Conductividad t�rmica constante
+kx=2.;  
+ky=2.;
+//Coeficiente de convecci�n y temperatura del fluido, p.e. aire, 
+//dentro de la circunferencia
+
+real hc=80.; 
+real uf=20.; 
+
+problem calor(u,v) = int2d(malla) (kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
++ int1d(malla,2) (hc*u*v) - int1d(malla,2) (hc*uf*v)
++ on(1,u=20);
+
+//Resolvemos el problema y dibujamos la soluci�n 
+//----------------------------------------------
+
+for(real i=0;i<2;i+=1)    // nro de iteraciones CIUDAO CON SER MUY EXIGENTES, SE RECOMIENDA max 3
+{
+
+//nbvx numero maximo de vertices  err error triangulo
+
+malla = adaptmesh(malla,u,v,err=0.001,hmax=0.1,hmin=0.01,cutoff=1e-6,ratio=1.6,nbvx=20000,
+splitpbedge=2,power=1,abserror=true,nomeshgeneration=false,anisomax=1);
+
+// error suele considerase 0.01  , 0.001.,  
+// hmax , hmin  es el tama�o max  y min de los triangulos de la malla
+
+// nbvx = numero de vertices de la malla   , esto lo impone severamente
+
+
+// tenemos que calibar un poco en el sentido que no debo elegir un error muy peque�o y sin embargo
+//  poner tama�os grande s a los triangulos
+
+plot (malla, wait=1);
+
+// err  es error max en un triangulo o elemento finito
+ // nbvx es nro vertices maximo
+
+calor;
+
+plot(u,value=1);
+
+}
+
+

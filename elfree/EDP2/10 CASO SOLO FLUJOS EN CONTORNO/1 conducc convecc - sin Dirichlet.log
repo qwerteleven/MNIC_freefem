@@ -1,0 +1,58 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc convecc - sin Dirichlet.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : //Definimos el dominio de estudio, creamos la malla y la dibujamos
+    2 : //----------------------------------------------------------------
+    3 : border a(t=-1,1) {x=t;y=-1;label=1;};
+    4 : border b(t=-1,1) {x=1;y=t;label=1;};
+    5 : border c(t=1,-1) {x=t;y=1;label=1;};
+    6 : border d(t=1,-1) {x=-1;y=t;label=1;};
+    7 :
+    8 : real pi2=2*pi;
+    9 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+   10 :
+   11 : int n=10;
+   12 : mesh malla = buildmesh(a(n)+b(14)+c(n)+d(14)+e(-4*n));
+   13 : plot(malla, wait=1);
+   14 :
+   15 : //Definimos el problema que queremos resolver
+   16 : //-------------------------------------------
+   17 : fespace Vh(malla,P2);
+   18 : Vh u,v,kx,ky; // u es temperatura en grados Celsius
+   19 :
+   20 : //Conductividad térmica constante
+   21 : kx=2.;
+   22 : ky=2.;
+   23 : real hc=80.; //Coeficiente de convección y temperatura del fluido, p.e. aire, dentro de la circunferencia
+   24 :
+   25 : real uf=50.;
+   26 : // temperatura aire o agua o fluido dentro del orifico, es decir en contacto con contorno label =2
+   27 :
+   28 : real hc2=18.; //Coeficiente de convección y temperatura del fluido, p.e. aire, en el exterior del cuadrado
+   29 :
+   30 : real uf2=20.;
+   31 : // temperatura aire  exterior
+   32 :
+   33 :
+   34 : real epsilon=0.00000001;
+   35 :
+   36 : problem calor(u,v) =
+   37 : int2d(malla) (epsilon*u*v)
+   38 : +int2d(malla) (kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
+   39 : + int1d(malla,2) (hc*u*v) - int1d(malla,2) (hc*uf*v)
+   40 : + int1d(malla,1) (hc2*u*v) - int1d(malla,1) (hc2*uf2*v);
+   41 : //+ on(1,u=20);
+   42 :
+   43 : //Resolvemos el problema y dibujamos la solución
+   44 : //----------------------------------------------
+   45 : calor;
+   46 : plot(u, value=1); sizestack + 1024 =2960  ( 1936 )
+ 
+  --  mesh:  Nb of Triangles =    836, Nb of Vertices 462
+  -- Solve :
+          min 20.3098  max 48.2201
+times: compile 0.185s, execution 0.28s,  mpirank:0
+ ######## We forget of deleting   38 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3878,  size :503672 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc convecc - sin Dirichlet.edp€7®

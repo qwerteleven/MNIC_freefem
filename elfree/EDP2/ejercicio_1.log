@@ -1,0 +1,1713 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\ejercicio_1.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+    2 :
+    3 : aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para
+calculo de velocidades */
+    4 :
+    5 : // ejercico 1 fuentes puntuales continuas
+    6 :
+    7 : // ejercicio 2 fuentes continuas en el tiempo
+    8 :
+    9 : //
+   10 :
+   11 : real dt=0.001, t=0;
+   12 :
+   13 : int n=100;
+   14 : int m=0;  // para contar iteraciones luego
+   15 :
+   16 : border a(t=20,0) {x=-12;y=t;label=1;}
+   17 : border b(t=-12,0) {x=t;y=0;label=2;}
+   18 : border c(t=0,20) {x=t; y=t ;label=4;}
+   19 : border d(t=20,-12) {x=t;y=20;label=3;}
+   20 :
+   21 : mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+   22 : plot(malla, wait=1);
+   23 :
+   24 :
+   25 : real alpha=1/dt;
+   26 :
+   27 : fespace Vh(malla, P1);
+   28 : Vh T,v,u1,u2,k,Toldt;
+   29 :
+   30 :
+   31 : // T es la incognita u
+   32 :
+   33 : // r e la cte del termino de reaccion
+   34 :
+   35 : real r=0.3;
+   36 :
+   37 :
+   38 : // velocidad
+   39 : u1=10; // Wx
+   40 : u2=10; // Wy
+   41 :
+   42 : k=5;
+   43 :
+   44 : Toldt=100;
+   45 :
+   46 : plot([u1, u2], wait=1);
+   47 :
+   48 :
+   49 : //********************** fuentes puntuales
+   50 :
+   51 : border C2a(t=0, 2*pi) { x=-10+0.0001*cos(t); y = 10+0.0001*sin(t);};
+   52 :
+   53 : // calculo infinitesimal C = {-10, 10}, fp = 100 W/m2
+   54 :
+   55 : mesh mallafp1 = buildmesh(C2a(30));  //mallado fp1
+   56 :
+   57 : fespace Vhfp1(mallafp1, P1);
+   58 :
+   59 : Vhfp1 fp1;
+   60 :
+   61 : real AA = 2000; //intensidad fp1
+   62 : real BB = 4000; //intensidad fp2
+   63 :
+   64 :
+   65 : real x0, y0;
+ *** Warning  The identifier y0 hide a Global identifier
+ 
+   66 : x0=16;
+   67 : y0=17;
+   68 :
+   69 :
+   70 :
+   71 : border C2p(t=0, 2*pi) { x=x0+0.0001*cos(t); y = y0+0.0001*sin(t);};
+   72 :
+   73 : // calculo infinitesimal C = {16, 17}, fp = 400 W/m2
+   74 :
+   75 : mesh mallafp2 = buildmesh(C2p(30));  //mallado fp2
+   76 :
+   77 : fespace Vhfp2(mallafp2, P2);
+   78 : Vhfp2 fp2;
+   79 :
+   80 : real landa = 2;
+   81 :
+   82 : fp1 = AA * exp(-landa * ((x+10)^2 + (y - 10)^2));
+   83 : fp2 = BB * exp(-landa * ((x-x0)^2 + (y - y0)^2));
+   84 :
+   85 : real area1 = int2d(mallafp1)(1.);
+   86 : real area2 = int2d(mallafp2)(1.);
+   87 :
+   88 :
+   89 :
+   90 :
+   91 : // comprobacion de calculo infinitesimal
+   92 :
+   93 : real I1;
+   94 : I1 = int2d(mallafp1)(fp1);
+   95 : I1 = I1/area1; // I1 == AA
+   96 :
+   97 : cout << "promedio integral: " << I1 << "\n";
+   98 :
+   99 : real I2;
+  100 : I2 = int2d(mallafp2)(fp2);
+  101 : I2 = I2/area2; // I2 == BB
+  102 :
+  103 :
+  104 :
+  105 : //*************************dif 1***************************
+  106 :
+  107 :
+  108 :
+  109 : problem convecdif1 (T,v)=
+  110 :
+  111 : int2d (malla)  (T*v / dt)  - int2d(malla)(Toldt*v / dt) // derivada parcial resp tiempo
+  112 :
+  113 : +int2d(malla) (u1*dx(T)*v+u2*dy(T)*v) // termino nuevo de conveccion
+  114 :
+  115 : +int2d(malla) (k*dx(T)*dx(v)+k*dy(T)*dy(v) ) // metodo de Euler en estos terminos difusivos
+  116 :
+  117 : -int1d(malla,2)(10*k*v) -int1d(malla,3)(10*k*v)
+  118 :
+  119 : +int2d(malla) (r*T*v)
+  120 :
+  121 : // integrales fuentes puntuales, de vertidos
+  122 :
+  123 : -int2d(mallafp1)((fp1/area1)*v)
+  124 : -int2d(mallafp2)((fp2/area2)*v)
+  125 :
+  126 :  + on (1,T=100)
+  127 :  + on (4,T=200);
+  128 :
+  129 :
+  130 : //************************dif 2****************************
+  131 :
+  132 : problem convecdif2 (T,v) =
+  133 :
+  134 : int2d (malla)  (T*v / dt)  - int2d(malla)(Toldt*v / dt) // derivada parcial resp tiempo
+  135 :
+  136 : +int2d(malla) (u1*dx(T)*v+u2*dy(T)*v) // termino nuevo de conveccion
+  137 :
+  138 : +int2d(malla) (k*dx(T)*dx(v)+k*dy(T)*dy(v) ) // metodo de Euler en estos terminos difusivos
+  139 :
+  140 : -int1d(malla,2)(10*k*v) -int1d(malla,3)(10*k*v)
+  141 :
+  142 : +int2d(malla) (r*T*v)
+  143 :
+  144 : // dejan de actuar las fuentes puntuales
+  145 : //-int2d(mallafp1)((fp1/area1)*v)
+  146 : //-int2d(mallafp2)((fp2/area2)*v)
+  147 :
+  148 :  + on (1,T=100)
+  149 :  + on (4,T=200);
+  150 :
+  151 :
+  152 :
+  153 :
+  154 :
+  155 : // show computation
+  156 :
+  157 : real Tmax=600;
+  158 :
+  159 : for(t=0;t<Tmax;t+=dt) {
+  160 :
+  161 :     m=m+1;
+  162 :
+  163 :
+  164 :     if (t < 0.1) {
+  165 :         convecdif1;
+  166 :     } else {
+  167 :         convecdif2;
+  168 :     }
+  169 :
+  170 :     Toldt=T;
+  171 :
+  172 :     if ( !(m % 3))             //cada multiplo de 10 imprime el plot de la linea siguiente
+  173 :     plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1);
+  174 :
+  175 : }
+  176 :
+  177 :  sizestack + 1024 =9840  ( 8816 )
+ 
+  --  mesh:  Nb of Triangles =  16956, Nb of Vertices 8679
+  --  mesh:  Nb of Triangles =    152, Nb of Vertices 92
+  --  mesh:  Nb of Triangles =    150, Nb of Vertices 91
+promedio integral: 2000
+  -- Solve :
+          min 81.2947  max 200
+  -- Solve :
+          min 92.0709  max 200
+  -- Solve :
+          min 93.295  max 200
+  -- Solve :
+          min 93.4223  max 205.365
+  -- Solve :
+          min 94.0658  max 217.065
+  -- Solve :
+          min 95.0913  max 226.649
+  -- Solve :
+          min 96.3984  max 234.791
+  -- Solve :
+          min 97.9106  max 241.905
+  -- Solve :
+          min 98.3332  max 248.259
+  -- Solve :
+          min 98.4438  max 254.027
+  -- Solve :
+          min 98.5376  max 259.33
+  -- Solve :
+          min 98.7008  max 264.249
+  -- Solve :
+          min 98.8328  max 268.846
+  -- Solve :
+          min 98.9312  max 273.165
+  -- Solve :
+          min 98.9183  max 277.241
+  -- Solve :
+          min 98.8962  max 281.101
+  -- Solve :
+          min 98.8904  max 284.765
+  -- Solve :
+          min 98.9002  max 288.252
+  -- Solve :
+          min 98.9248  max 291.577
+  -- Solve :
+          min 98.9635  max 294.752
+  -- Solve :
+          min 99.0157  max 297.789
+  -- Solve :
+          min 99.0807  max 300.696
+  -- Solve :
+          min 99.1528  max 303.483
+  -- Solve :
+          min 99.158  max 306.158
+  -- Solve :
+          min 99.137  max 308.726
+  -- Solve :
+          min 99.1165  max 311.194
+  -- Solve :
+          min 99.0998  max 313.568
+  -- Solve :
+          min 99.0871  max 315.854
+  -- Solve :
+          min 99.0784  max 318.055
+  -- Solve :
+          min 99.0676  max 320.176
+  -- Solve :
+          min 99.0453  max 322.221
+  -- Solve :
+          min 99.0163  max 324.195
+  -- Solve :
+          min 98.9882  max 326.1
+  -- Solve :
+          min 98.9614  max 327.94
+  -- Solve :
+          min 98.9358  max 329.718
+  -- Solve :
+          min 98.9116  max 331.437
+  -- Solve :
+          min 98.8834  max 333.1
+  -- Solve :
+          min 98.8538  max 334.709
+  -- Solve :
+          min 98.8247  max 336.266
+  -- Solve :
+          min 98.7962  max 337.774
+  -- Solve :
+          min 98.7684  max 339.235
+  -- Solve :
+          min 98.7415  max 340.651
+  -- Solve :
+          min 98.7145  max 342.024
+  -- Solve :
+          min 98.6852  max 343.356
+  -- Solve :
+          min 98.656  max 344.647
+  -- Solve :
+          min 98.6268  max 345.901
+  -- Solve :
+          min 98.5979  max 347.119
+  -- Solve :
+          min 98.5686  max 348.301
+  -- Solve :
+          min 98.539  max 349.449
+  -- Solve :
+          min 98.5094  max 350.566
+  -- Solve :
+          min 98.4798  max 351.651
+  -- Solve :
+          min 98.4504  max 352.706
+  -- Solve :
+          min 98.421  max 353.733
+  -- Solve :
+          min 98.3918  max 354.731
+  -- Solve :
+          min 98.3626  max 355.703
+  -- Solve :
+          min 98.3334  max 356.65
+  -- Solve :
+          min 98.3041  max 357.571
+  -- Solve :
+          min 98.2747  max 358.469
+  -- Solve :
+          min 98.2452  max 359.343
+  -- Solve :
+          min 98.2157  max 360.196
+  -- Solve :
+          min 98.1863  max 361.027
+  -- Solve :
+          min 98.1568  max 361.837
+  -- Solve :
+          min 98.1274  max 362.627
+  -- Solve :
+          min 98.0981  max 363.398
+  -- Solve :
+          min 98.0687  max 364.15
+  -- Solve :
+          min 98.0395  max 364.884
+  -- Solve :
+          min 98.0101  max 365.6
+  -- Solve :
+          min 97.9807  max 366.3
+  -- Solve :
+          min 97.9514  max 366.984
+  -- Solve :
+          min 97.922  max 367.651
+  -- Solve :
+          min 97.8927  max 368.303
+  -- Solve :
+          min 97.8633  max 368.941
+  -- Solve :
+          min 97.834  max 369.564
+  -- Solve :
+          min 97.8047  max 370.173
+  -- Solve :
+          min 97.7753  max 370.769
+  -- Solve :
+          min 97.746  max 371.351
+  -- Solve :
+          min 97.7167  max 371.921
+  -- Solve :
+          min 97.6875  max 372.479
+  -- Solve :
+          min 97.6582  max 373.025
+  -- Solve :
+          min 97.6289  max 373.559
+  -- Solve :
+          min 97.5996  max 374.082
+  -- Solve :
+          min 97.5703  max 374.594
+  -- Solve :
+          min 97.5411  max 375.095
+  -- Solve :
+          min 97.5118  max 375.586
+  -- Solve :
+          min 97.4826  max 376.067
+  -- Solve :
+          min 97.4533  max 376.539
+  -- Solve :
+          min 97.4241  max 377.001
+  -- Solve :
+          min 97.3949  max 377.454
+  -- Solve :
+          min 97.3657  max 377.898
+  -- Solve :
+          min 97.3365  max 378.333
+  -- Solve :
+          min 97.3073  max 378.76
+  -- Solve :
+          min 97.2781  max 379.179
+  -- Solve :
+          min 97.2489  max 379.589
+  -- Solve :
+          min 97.2198  max 379.992
+  -- Solve :
+          min 97.1906  max 380.388
+  -- Solve :
+          min 97.1615  max 380.776
+  -- Solve :
+          min 97.1323  max 381.156
+  -- Solve :
+          min 97.1032  max 381.53
+  -- Solve :
+          min 97.0741  max 381.897
+  -- Solve :
+          min 97.045  max 382.258
+  -- Solve :
+          min 97.0159  max 340.705
+  -- Solve :
+          min 96.9868  max 316.611
+  -- Solve :
+          min 96.9577  max 303.889
+  -- Solve :
+          min 96.9286  max 293.993
+  -- Solve :
+          min 96.8995  max 285.002
+  -- Solve :
+          min 96.8705  max 279.648
+  -- Solve :
+          min 96.8414  max 274.853
+  -- Solve :
+          min 96.8124  max 270.19
+  -- Solve :
+          min 96.7834  max 265.699
+  -- Solve :
+          min 96.7543  max 261.402
+  -- Solve :
+          min 96.7253  max 257.304
+  -- Solve :
+          min 96.6963  max 253.406
+  -- Solve :
+          min 96.6673  max 249.701
+  -- Solve :
+          min 96.6383  max 246.184
+  -- Solve :
+          min 96.6093  max 242.845
+  -- Solve :
+          min 96.5804  max 239.928
+  -- Solve :
+          min 96.5514  max 237.957
+  -- Solve :
+          min 96.5224  max 236
+  -- Solve :
+          min 96.4935  max 234.063
+  -- Solve :
+          min 96.4645  max 232.155
+  -- Solve :
+          min 96.4356  max 230.28
+  -- Solve :
+          min 96.4067  max 228.443
+  -- Solve :
+          min 96.3778  max 226.647
+  -- Solve :
+          min 96.3489  max 224.894
+  -- Solve :
+          min 96.32  max 223.185
+  -- Solve :
+          min 96.2911  max 221.522
+  -- Solve :
+          min 96.2622  max 219.906
+  -- Solve :
+          min 96.2333  max 218.335
+  -- Solve :
+          min 96.2045  max 216.811
+  -- Solve :
+          min 96.1756  max 215.333
+  -- Solve :
+          min 96.1468  max 213.9
+  -- Solve :
+          min 96.118  max 212.512
+  -- Solve :
+          min 96.0891  max 211.521
+  -- Solve :
+          min 96.0603  max 210.643
+  -- Solve :
+          min 96.0315  max 209.774
+  -- Solve :
+          min 96.0027  max 208.915
+  -- Solve :
+          min 95.9739  max 208.067
+  -- Solve :
+          min 95.9451  max 207.23
+  -- Solve :
+          min 95.9163  max 206.406
+  -- Solve :
+          min 95.8876  max 205.595
+  -- Solve :
+          min 95.8588  max 204.798
+  -- Solve :
+          min 95.8301  max 204.015
+  -- Solve :
+          min 95.8013  max 203.246
+  -- Solve :
+          min 95.7726  max 202.618
+  -- Solve :
+          min 95.7439  max 202.223
+  -- Solve :
+          min 95.7152  max 201.833
+  -- Solve :
+          min 95.6865  max 201.449
+  -- Solve :
+          min 95.6578  max 201.07
+  -- Solve :
+          min 95.6291  max 200.698
+  -- Solve :
+          min 95.6004  max 200.331
+  -- Solve :
+          min 95.5717  max 200
+  -- Solve :
+          min 95.5431  max 200
+  -- Solve :
+          min 95.5144  max 200
+  -- Solve :
+          min 95.4858  max 200
+  -- Solve :
+          min 95.4571  max 200
+  -- Solve :
+          min 95.4285  max 200
+  -- Solve :
+          min 95.3999  max 200
+  -- Solve :
+          min 95.3713  max 200
+  -- Solve :
+          min 95.3427  max 200
+  -- Solve :
+          min 95.3141  max 200
+  -- Solve :
+          min 95.2855  max 200
+  -- Solve :
+          min 95.2569  max 200
+  -- Solve :
+          min 95.2283  max 200
+  -- Solve :
+          min 95.1998  max 200
+  -- Solve :
+          min 95.1712  max 200
+  -- Solve :
+          min 95.1427  max 200
+  -- Solve :
+          min 95.1141  max 200
+  -- Solve :
+          min 95.0856  max 200
+  -- Solve :
+          min 95.0571  max 200
+  -- Solve :
+          min 95.0286  max 200
+  -- Solve :
+          min 95.0001  max 200
+  -- Solve :
+          min 94.9716  max 200
+  -- Solve :
+          min 94.9431  max 200
+  -- Solve :
+          min 94.9146  max 200
+  -- Solve :
+          min 94.8862  max 200
+  -- Solve :
+          min 94.8577  max 200
+  -- Solve :
+          min 94.8293  max 200
+  -- Solve :
+          min 94.8008  max 200
+  -- Solve :
+          min 94.7724  max 200
+  -- Solve :
+          min 94.744  max 200
+  -- Solve :
+          min 94.7156  max 200
+  -- Solve :
+          min 94.6872  max 200
+  -- Solve :
+          min 94.6588  max 200
+  -- Solve :
+          min 94.6304  max 200
+  -- Solve :
+          min 94.602  max 200
+  -- Solve :
+          min 94.5736  max 200
+  -- Solve :
+          min 94.5453  max 200
+  -- Solve :
+          min 94.5169  max 200
+  -- Solve :
+          min 94.4886  max 200
+  -- Solve :
+          min 94.4602  max 200
+  -- Solve :
+          min 94.4319  max 200
+  -- Solve :
+          min 94.4036  max 200
+  -- Solve :
+          min 94.3753  max 200
+  -- Solve :
+          min 94.3469  max 200
+  -- Solve :
+          min 94.3187  max 200
+  -- Solve :
+          min 94.2904  max 200
+  -- Solve :
+          min 94.2621  max 200
+  -- Solve :
+          min 94.2338  max 200
+  -- Solve :
+          min 94.2056  max 200
+  -- Solve :
+          min 94.1773  max 200
+  -- Solve :
+          min 94.1491  max 200
+  -- Solve :
+          min 94.1208  max 200
+  -- Solve :
+          min 94.0926  max 200
+  -- Solve :
+          min 94.0644  max 200
+  -- Solve :
+          min 94.0362  max 200
+  -- Solve :
+          min 94.008  max 200
+  -- Solve :
+          min 93.9798  max 200
+  -- Solve :
+          min 93.9516  max 200
+  -- Solve :
+          min 93.9234  max 200
+  -- Solve :
+          min 93.8952  max 200
+  -- Solve :
+          min 93.8671  max 200
+  -- Solve :
+          min 93.8389  max 200
+  -- Solve :
+          min 93.8108  max 200
+  -- Solve :
+          min 93.7826  max 200
+  -- Solve :
+          min 93.7545  max 200
+  -- Solve :
+          min 93.7264  max 200
+  -- Solve :
+          min 93.6983  max 200
+  -- Solve :
+          min 93.6702  max 200
+  -- Solve :
+          min 93.6421  max 200
+  -- Solve :
+          min 93.614  max 200
+  -- Solve :
+          min 93.5859  max 200
+  -- Solve :
+          min 93.5579  max 200
+  -- Solve :
+          min 93.5298  max 200
+  -- Solve :
+          min 93.5018  max 200
+  -- Solve :
+          min 93.4737  max 200
+  -- Solve :
+          min 93.4457  max 200
+  -- Solve :
+          min 93.4177  max 200
+  -- Solve :
+          min 93.3896  max 200
+  -- Solve :
+          min 93.3616  max 200
+  -- Solve :
+          min 93.3336  max 200
+  -- Solve :
+          min 93.3056  max 200
+  -- Solve :
+          min 93.2777  max 200
+  -- Solve :
+          min 93.2497  max 200
+  -- Solve :
+          min 93.2217  max 200
+  -- Solve :
+          min 93.1938  max 200
+  -- Solve :
+          min 93.1658  max 200
+  -- Solve :
+          min 93.1379  max 200
+  -- Solve :
+          min 93.1099  max 200
+  -- Solve :
+          min 93.082  max 200
+  -- Solve :
+          min 93.0541  max 200
+  -- Solve :
+          min 93.0262  max 200
+  -- Solve :
+          min 92.9983  max 200
+  -- Solve :
+          min 92.9704  max 200
+  -- Solve :
+          min 92.9425  max 200
+  -- Solve :
+          min 92.9146  max 200
+  -- Solve :
+          min 92.8868  max 200
+  -- Solve :
+          min 92.8589  max 200
+  -- Solve :
+          min 92.8311  max 200
+  -- Solve :
+          min 92.8032  max 200
+  -- Solve :
+          min 92.7754  max 200
+  -- Solve :
+          min 92.7476  max 200
+  -- Solve :
+          min 92.7198  max 200
+  -- Solve :
+          min 92.6919  max 200
+  -- Solve :
+          min 92.6641  max 200
+  -- Solve :
+          min 92.6364  max 200
+  -- Solve :
+          min 92.6086  max 200
+  -- Solve :
+          min 92.5808  max 200
+  -- Solve :
+          min 92.553  max 200
+  -- Solve :
+          min 92.5253  max 200
+  -- Solve :
+          min 92.4975  max 200
+  -- Solve :
+          min 92.4698  max 200
+  -- Solve :
+          min 92.4421  max 200
+  -- Solve :
+          min 92.4143  max 200
+  -- Solve :
+          min 92.3866  max 200
+  -- Solve :
+          min 92.3589  max 200
+  -- Solve :
+          min 92.3312  max 200
+  -- Solve :
+          min 92.3035  max 200
+  -- Solve :
+          min 92.2758  max 200
+  -- Solve :
+          min 92.2482  max 200
+  -- Solve :
+          min 92.2205  max 200
+  -- Solve :
+          min 92.1928  max 200
+  -- Solve :
+          min 92.1652  max 200
+  -- Solve :
+          min 92.1375  max 200
+  -- Solve :
+          min 92.1099  max 200
+  -- Solve :
+          min 92.0823  max 200
+  -- Solve :
+          min 92.0547  max 200
+  -- Solve :
+          min 92.0271  max 200
+  -- Solve :
+          min 91.9995  max 200
+  -- Solve :
+          min 91.9719  max 200
+  -- Solve :
+          min 91.9443  max 200
+  -- Solve :
+          min 91.9167  max 200
+  -- Solve :
+          min 91.8891  max 200
+  -- Solve :
+          min 91.8616  max 200
+  -- Solve :
+          min 91.834  max 200
+  -- Solve :
+          min 91.8065  max 200
+  -- Solve :
+          min 91.779  max 200
+  -- Solve :
+          min 91.7514  max 200
+  -- Solve :
+          min 91.7239  max 200
+  -- Solve :
+          min 91.6964  max 200
+  -- Solve :
+          min 91.6689  max 200
+  -- Solve :
+          min 91.6414  max 200
+  -- Solve :
+          min 91.6139  max 200
+  -- Solve :
+          min 91.5865  max 200
+  -- Solve :
+          min 91.559  max 200
+  -- Solve :
+          min 91.5315  max 200
+  -- Solve :
+          min 91.5041  max 200
+  -- Solve :
+          min 91.4766  max 200
+  -- Solve :
+          min 91.4492  max 200
+  -- Solve :
+          min 91.4218  max 200
+  -- Solve :
+          min 91.3944  max 200
+  -- Solve :
+          min 91.367  max 200
+  -- Solve :
+          min 91.3396  max 200
+  -- Solve :
+          min 91.3122  max 200
+  -- Solve :
+          min 91.2848  max 200
+  -- Solve :
+          min 91.2574  max 200
+  -- Solve :
+          min 91.23  max 200
+  -- Solve :
+          min 91.2027  max 200
+  -- Solve :
+          min 91.1753  max 200
+  -- Solve :
+          min 91.148  max 200
+  -- Solve :
+          min 91.1206  max 200
+  -- Solve :
+          min 91.0933  max 200
+  -- Solve :
+          min 91.066  max 200
+  -- Solve :
+          min 91.0387  max 200
+  -- Solve :
+          min 91.0114  max 200
+  -- Solve :
+          min 90.9841  max 200
+  -- Solve :
+          min 90.9568  max 200
+  -- Solve :
+          min 90.9295  max 200
+  -- Solve :
+          min 90.9023  max 200
+  -- Solve :
+          min 90.875  max 200
+  -- Solve :
+          min 90.8477  max 200
+  -- Solve :
+          min 90.8205  max 200
+  -- Solve :
+          min 90.7933  max 200
+  -- Solve :
+          min 90.766  max 200
+  -- Solve :
+          min 90.7388  max 200
+  -- Solve :
+          min 90.7116  max 200
+  -- Solve :
+          min 90.6844  max 200
+  -- Solve :
+          min 90.6572  max 200
+  -- Solve :
+          min 90.63  max 200
+  -- Solve :
+          min 90.6028  max 200
+  -- Solve :
+          min 90.5757  max 200
+  -- Solve :
+          min 90.5485  max 200
+  -- Solve :
+          min 90.5213  max 200
+  -- Solve :
+          min 90.4942  max 200
+  -- Solve :
+          min 90.4671  max 200
+  -- Solve :
+          min 90.4399  max 200
+  -- Solve :
+          min 90.4128  max 200
+  -- Solve :
+          min 90.3857  max 200
+  -- Solve :
+          min 90.3586  max 200
+  -- Solve :
+          min 90.3315  max 200
+  -- Solve :
+          min 90.3044  max 200
+  -- Solve :
+          min 90.2773  max 200
+  -- Solve :
+          min 90.2503  max 200
+  -- Solve :
+          min 90.2232  max 200
+  -- Solve :
+          min 90.1961  max 200
+  -- Solve :
+          min 90.1691  max 200
+  -- Solve :
+          min 90.1421  max 200
+  -- Solve :
+          min 90.115  max 200
+  -- Solve :
+          min 90.088  max 200
+  -- Solve :
+          min 90.061  max 200
+  -- Solve :
+          min 90.034  max 200
+  -- Solve :
+          min 90.007  max 200
+  -- Solve :
+          min 89.98  max 200
+  -- Solve :
+          min 89.953  max 200
+  -- Solve :
+          min 89.926  max 200
+  -- Solve :
+          min 89.8991  max 200
+  -- Solve :
+          min 89.8721  max 200
+  -- Solve :
+          min 89.8452  max 200
+  -- Solve :
+          min 89.8182  max 200
+  -- Solve :
+          min 89.7913  max 200
+  -- Solve :
+          min 89.7644  max 200
+  -- Solve :
+          min 89.7375  max 200
+  -- Solve :
+          min 89.7106  max 200
+  -- Solve :
+          min 89.6837  max 200
+  -- Solve :
+          min 89.6568  max 200
+  -- Solve :
+          min 89.6299  max 200
+  -- Solve :
+          min 89.603  max 200
+  -- Solve :
+          min 89.5761  max 200
+  -- Solve :
+          min 89.5493  max 200
+  -- Solve :
+          min 89.5224  max 200
+  -- Solve :
+          min 89.4956  max 200
+  -- Solve :
+          min 89.4688  max 200
+  -- Solve :
+          min 89.4419  max 200
+  -- Solve :
+          min 89.4151  max 200
+  -- Solve :
+          min 89.3883  max 200
+  -- Solve :
+          min 89.3615  max 200
+  -- Solve :
+          min 89.3347  max 200
+  -- Solve :
+          min 89.3079  max 200
+  -- Solve :
+          min 89.2812  max 200
+  -- Solve :
+          min 89.2544  max 200
+  -- Solve :
+          min 89.2276  max 200
+  -- Solve :
+          min 89.2009  max 200
+  -- Solve :
+          min 89.1741  max 200
+  -- Solve :
+          min 89.1474  max 200
+  -- Solve :
+          min 89.1207  max 200
+  -- Solve :
+          min 89.094  max 200
+  -- Solve :
+          min 89.0673  max 200
+  -- Solve :
+          min 89.0406  max 200
+  -- Solve :
+          min 89.0139  max 200
+  -- Solve :
+          min 88.9872  max 200
+  -- Solve :
+          min 88.9605  max 200
+  -- Solve :
+          min 88.9339  max 200
+  -- Solve :
+          min 88.9072  max 200
+  -- Solve :
+          min 88.8805  max 200
+  -- Solve :
+          min 88.8539  max 200
+  -- Solve :
+          min 88.8273  max 200
+  -- Solve :
+          min 88.8007  max 200
+  -- Solve :
+          min 88.774  max 200
+  -- Solve :
+          min 88.7474  max 200
+  -- Solve :
+          min 88.7208  max 200
+  -- Solve :
+          min 88.6942  max 200
+  -- Solve :
+          min 88.6677  max 200
+  -- Solve :
+          min 88.6411  max 200
+  -- Solve :
+          min 88.6145  max 200
+  -- Solve :
+          min 88.588  max 200
+  -- Solve :
+          min 88.5614  max 200
+  -- Solve :
+          min 88.5349  max 200
+  -- Solve :
+          min 88.5083  max 200
+  -- Solve :
+          min 88.4818  max 200
+  -- Solve :
+          min 88.4553  max 200
+  -- Solve :
+          min 88.4288  max 200
+  -- Solve :
+          min 88.4023  max 200
+  -- Solve :
+          min 88.3758  max 200
+  -- Solve :
+          min 88.3493  max 200
+  -- Solve :
+          min 88.3228  max 200
+  -- Solve :
+          min 88.2964  max 200
+  -- Solve :
+          min 88.2699  max 200
+  -- Solve :
+          min 88.2435  max 200
+  -- Solve :
+          min 88.217  max 200
+  -- Solve :
+          min 88.1906  max 200
+  -- Solve :
+          min 88.1642  max 200
+  -- Solve :
+          min 88.1378  max 200
+  -- Solve :
+          min 88.1114  max 200
+  -- Solve :
+          min 88.085  max 200
+  -- Solve :
+          min 88.0586  max 200
+  -- Solve :
+          min 88.0322  max 200
+  -- Solve :
+          min 88.0058  max 200
+  -- Solve :
+          min 87.9795  max 200
+  -- Solve :
+          min 87.9531  max 200
+  -- Solve :
+          min 87.9268  max 200
+  -- Solve :
+          min 87.9004  max 200
+  -- Solve :
+          min 87.8741  max 200
+  -- Solve :
+          min 87.8478  max 200
+  -- Solve :
+          min 87.8215  max 200
+  -- Solve :
+          min 87.7951  max 200
+  -- Solve :
+          min 87.7688  max 200
+  -- Solve :
+          min 87.7426  max 200
+  -- Solve :
+          min 87.7163  max 200
+  -- Solve :
+          min 87.69  max 200
+  -- Solve :
+          min 87.6637  max 200
+  -- Solve :
+          min 87.6375  max 200
+  -- Solve :
+          min 87.6113  max 200
+  -- Solve :
+          min 87.585  max 200
+  -- Solve :
+          min 87.5588  max 200
+  -- Solve :
+          min 87.5326  max 200
+  -- Solve :
+          min 87.5064  max 200
+  -- Solve :
+          min 87.4802  max 200
+  -- Solve :
+          min 87.454  max 200
+  -- Solve :
+          min 87.4278  max 200
+  -- Solve :
+          min 87.4016  max 200
+  -- Solve :
+          min 87.3755  max 200
+  -- Solve :
+          min 87.3493  max 200
+  -- Solve :
+          min 87.3232  max 200
+  -- Solve :
+          min 87.297  max 200
+  -- Solve :
+          min 87.2709  max 200
+  -- Solve :
+          min 87.2448  max 200
+  -- Solve :
+          min 87.2187  max 200
+  -- Solve :
+          min 87.1926  max 200
+  -- Solve :
+          min 87.1665  max 200
+  -- Solve :
+          min 87.1404  max 200
+  -- Solve :
+          min 87.1143  max 200
+  -- Solve :
+          min 87.0883  max 200
+  -- Solve :
+          min 87.0622  max 200
+  -- Solve :
+          min 87.0362  max 200
+  -- Solve :
+          min 87.0101  max 200
+  -- Solve :
+          min 86.9841  max 200
+  -- Solve :
+          min 86.958  max 200
+  -- Solve :
+          min 86.932  max 200
+  -- Solve :
+          min 86.906  max 200
+  -- Solve :
+          min 86.88  max 200
+  -- Solve :
+          min 86.854  max 200
+  -- Solve :
+          min 86.8281  max 200
+  -- Solve :
+          min 86.8021  max 200
+  -- Solve :
+          min 86.7761  max 200
+  -- Solve :
+          min 86.7502  max 200
+  -- Solve :
+          min 86.7242  max 200
+  -- Solve :
+          min 86.6983  max 200
+  -- Solve :
+          min 86.6724  max 200
+  -- Solve :
+          min 86.6465  max 200
+  -- Solve :
+          min 86.6206  max 200
+  -- Solve :
+          min 86.5947  max 200
+  -- Solve :
+          min 86.5688  max 200
+  -- Solve :
+          min 86.5429  max 200
+  -- Solve :
+          min 86.517  max 200
+  -- Solve :
+          min 86.4912  max 200
+  -- Solve :
+          min 86.4654  max 200
+  -- Solve :
+          min 86.4395  max 200
+  -- Solve :
+          min 86.4137  max 200
+  -- Solve :
+          min 86.3879  max 200
+  -- Solve :
+          min 86.3621  max 200
+  -- Solve :
+          min 86.3363  max 200
+  -- Solve :
+          min 86.3105  max 200
+  -- Solve :
+          min 86.2847  max 200
+  -- Solve :
+          min 86.259  max 200
+  -- Solve :
+          min 86.2332  max 200
+  -- Solve :
+          min 86.2075  max 200
+  -- Solve :
+          min 86.1818  max 200
+  -- Solve :
+          min 86.156  max 200
+  -- Solve :
+          min 86.1303  max 200
+  -- Solve :
+          min 86.1046  max 200
+  -- Solve :
+          min 86.0789  max 200
+  -- Solve :
+          min 86.0532  max 200
+  -- Solve :
+          min 86.0275  max 200
+  -- Solve :
+          min 86.0018  max 200
+  -- Solve :
+          min 85.9761  max 200
+  -- Solve :
+          min 85.9504  max 200
+  -- Solve :
+          min 85.9248  max 200
+  -- Solve :
+          min 85.8991  max 200
+  -- Solve :
+          min 85.8735  max 200
+  -- Solve :
+          min 85.8478  max 200
+  -- Solve :
+          min 85.8222  max 200
+  -- Solve :
+          min 85.7966  max 200
+  -- Solve :
+          min 85.771  max 200
+  -- Solve :
+          min 85.7454  max 200
+  -- Solve :
+          min 85.7199  max 200
+  -- Solve :
+          min 85.6943  max 200
+  -- Solve :
+          min 85.6687  max 200
+  -- Solve :
+          min 85.6432  max 200
+  -- Solve :
+          min 85.6177  max 200
+  -- Solve :
+          min 85.5921  max 200
+  -- Solve :
+          min 85.5666  max 200
+  -- Solve :
+          min 85.5411  max 200
+  -- Solve :
+          min 85.5156  max 200
+  -- Solve :
+          min 85.4902  max 200
+  -- Solve :
+          min 85.4647  max 200
+  -- Solve :
+          min 85.4392  max 200
+  -- Solve :
+          min 85.4137  max 200
+  -- Solve :
+          min 85.3883  max 200
+  -- Solve :
+          min 85.3629  max 200
+  -- Solve :
+          min 85.3374  max 200
+  -- Solve :
+          min 85.312  max 200
+  -- Solve :
+          min 85.2866  max 200
+  -- Solve :
+          min 85.2612  max 200
+  -- Solve :
+          min 85.2358  max 200
+  -- Solve :
+          min 85.2105  max 200
+  -- Solve :
+          min 85.1851  max 200
+  -- Solve :
+          min 85.1597  max 200
+  -- Solve :
+          min 85.1344  max 200
+  -- Solve :
+          min 85.1091  max 200
+  -- Solve :
+          min 85.0838  max 200
+  -- Solve :
+          min 85.0585  max 200
+  -- Solve :
+          min 85.0332  max 200
+  -- Solve :
+          min 85.0079  max 200
+  -- Solve :
+          min 84.9826  max 200
+  -- Solve :
+          min 84.9574  max 200
+  -- Solve :
+          min 84.9321  max 200
+  -- Solve :
+          min 84.9069  max 200
+  -- Solve :
+          min 84.8817  max 200
+  -- Solve :
+          min 84.8565  max 200
+  -- Solve :
+          min 84.8313  max 200
+  -- Solve :
+          min 84.8061  max 200
+  -- Solve :
+          min 84.7809  max 200
+  -- Solve :
+          min 84.7557  max 200
+  -- Solve :
+          min 84.7306  max 200
+  -- Solve :
+          min 84.7054  max 200
+  -- Solve :
+          min 84.6803  max 200
+  -- Solve :
+          min 84.6551  max 200
+  -- Solve :
+          min 84.6299  max 200
+  -- Solve :
+          min 84.6048  max 200
+  -- Solve :
+          min 84.5796  max 200
+  -- Solve :
+          min 84.5545  max 200
+  -- Solve :
+          min 84.5294  max 200
+  -- Solve :
+          min 84.5043  max 200
+  -- Solve :
+          min 84.4792  max 200
+  -- Solve :
+          min 84.4541  max 200
+  -- Solve :
+          min 84.4291  max 200
+  -- Solve :
+          min 84.404  max 200
+  -- Solve :
+          min 84.379  max 200
+  -- Solve :
+          min 84.3539  max 200
+  -- Solve :
+          min 84.3289  max 200
+  -- Solve :
+          min 84.3039  max 200
+  -- Solve :
+          min 84.2789  max 200
+  -- Solve :
+          min 84.2539  max 200
+  -- Solve :
+          min 84.229  max 200
+  -- Solve :
+          min 84.204  max 200
+  -- Solve :
+          min 84.1791  max 200
+  -- Solve :
+          min 84.1541  max 200
+  -- Solve :
+          min 84.1292  max 200
+  -- Solve :
+          min 84.1043  max 200
+  -- Solve :
+          min 84.0794  max 200
+  -- Solve :
+          min 84.0546  max 200
+  -- Solve :
+          min 84.0297  max 200
+  -- Solve :
+          min 84.0048  max 200
+  -- Solve :
+          min 83.98  max 200
+  -- Solve :
+          min 83.9552  max 200
+  -- Solve :
+          min 83.9304  max 200
+  -- Solve :
+          min 83.9056  max 200
+  -- Solve :
+          min 83.8808  max 200
+  -- Solve :
+          min 83.856  max 200
+  -- Solve :
+          min 83.8313  max 200
+  -- Solve :
+          min 83.8065  max 200
+  -- Solve :
+          min 83.7818  max 200
+  -- Solve :
+          min 83.7571  max 200
+  -- Solve :
+          min 83.7324  max 200
+  -- Solve :
+          min 83.7077  max 200
+  -- Solve :
+          min 83.683  max 200
+  -- Solve :
+          min 83.6583  max 200
+  -- Solve :
+          min 83.6337  max 200
+  -- Solve :
+          min 83.6091  max 200
+  -- Solve :
+          min 83.5844  max 200
+  -- Solve :
+          min 83.5598  max 200
+  -- Solve :
+          min 83.5353  max 200
+  -- Solve :
+          min 83.5107  max 200
+  -- Solve :
+          min 83.4861  max 200
+  -- Solve :
+          min 83.4616  max 200
+  -- Solve :
+          min 83.4371  max 200
+  -- Solve :
+          min 83.4125  max 200
+  -- Solve :
+          min 83.3879  max 200
+  -- Solve :
+          min 83.3633  max 200
+  -- Solve :
+          min 83.3387  max 200
+  -- Solve :
+          min 83.3142  max 200
+  -- Solve :
+          min 83.2896  max 200
+  -- Solve :
+          min 83.2651  max 200
+  -- Solve :
+          min 83.2406  max 200
+  -- Solve :
+          min 83.216  max 200
+  -- Solve :
+          min 83.1916  max 200
+  -- Solve :
+          min 83.1671  max 200
+  -- Solve :
+          min 83.1426  max 200
+  -- Solve :
+          min 83.1182  max 200
+  -- Solve :
+          min 83.0937  max 200
+  -- Solve :
+          min 83.0693  max 200
+  -- Solve :
+          min 83.0449  max 200
+  -- Solve :
+          min 83.0205  max 200
+  -- Solve :
+          min 82.9962  max 200
+  -- Solve :
+          min 82.9718  max 200
+  -- Solve :
+          min 82.9475  max 200
+  -- Solve :
+          min 82.9231  max 200
+  -- Solve :
+          min 82.8988  max 200
+  -- Solve :
+          min 82.8745  max 200
+  -- Solve :
+          min 82.8502  max 200
+  -- Solve :
+          min 82.826  max 200
+  -- Solve :
+          min 82.8017  max 200
+  -- Solve :
+          min 82.7775  max 200
+  -- Solve :
+          min 82.7533  max 200
+  -- Solve :
+          min 82.7291  max 200
+  -- Solve :
+          min 82.7049  max 200
+  -- Solve :
+          min 82.6807  max 200
+  -- Solve :
+          min 82.6565  max 200
+  -- Solve :
+          min 82.6324  max 200
+  -- Solve :
+          min 82.6083  max 200
+  -- Solve :
+          min 82.5842  max 200
+  -- Solve :
+          min 82.5601  max 200
+  -- Solve :
+          min 82.536  max 200
+  -- Solve :
+          min 82.5119  max 200
+  -- Solve :
+          min 82.4879  max 200
+  -- Solve :
+          min 82.4639  max 200
+  -- Solve :
+          min 82.4399  max 200
+  -- Solve :
+          min 82.4159  max 200
+  -- Solve :
+          min 82.3919  max 200
+  -- Solve :
+          min 82.3679  max 200
+  -- Solve :
+          min 82.344  max 200
+  -- Solve :
+          min 82.3201  max 200
+  -- Solve :
+          min 82.2961  max 200
+  -- Solve :
+          min 82.2721  max 200
+  -- Solve :
+          min 82.2481  max 200
+  -- Solve :
+          min 82.2241  max 200
+  -- Solve :
+          min 82.2002  max 200
+  -- Solve :
+          min 82.1763  max 200
+  -- Solve :
+          min 82.1523  max 200
+  -- Solve :
+          min 82.1285  max 200
+  -- Solve :
+          min 82.1046  max 200
+  -- Solve :
+          min 82.0807  max 200
+  -- Solve :
+          min 82.0569  max 200
+  -- Solve :
+          min 82.033  max 200
+  -- Solve :
+          min 82.0092  max 200
+  -- Solve :
+          min 81.9854  max 200
+  -- Solve :
+          min 81.9617  max 200
+  -- Solve :
+          min 81.9379  max 200
+  -- Solve :
+          min 81.9142  max 200
+  -- Solve :
+          min 81.8904  max 200
+  -- Solve :
+          min 81.8667  max 200
+  -- Solve :
+          min 81.8431  max 200
+  -- Solve :
+          min 81.8194  max 200
+  -- Solve :
+          min 81.7957  max 200
+  -- Solve :
+          min 81.7721  max 200
+  -- Solve :
+          min 81.7485  max 200
+  -- Solve :
+          min 81.7248  max 200
+  -- Solve :
+          min 81.7011  max 200
+  -- Solve :
+          min 81.6774  max 200
+  -- Solve :
+          min 81.6538  max 200
+  -- Solve :
+          min 81.6301  max 200
+  -- Solve :
+          min 81.6065  max 200
+  -- Solve :
+          min 81.5829  max 200
+  -- Solve :
+          min 81.5593  max 200
+  -- Solve :
+          min 81.5358  max 200
+  -- Solve :
+          min 81.5122  max 200
+  -- Solve :
+          min 81.4887  max 200
+  -- Solve :
+          min 81.4651  max 200
+  -- Solve :
+          min 81.4416  max 200
+  -- Solve :
+          min 81.4182  max 200
+  -- Solve :
+          min 81.3947  max 200
+  -- Solve :
+          min 81.3712  max 200
+  -- Solve :
+          min 81.3478  max 200
+  -- Solve :
+          min 81.3244  max 200
+  -- Solve :
+          min 81.301  max 200
+  -- Solve :
+          min 81.2776  max 200
+  -- Solve :
+          min 81.2543  max 200
+  -- Solve :
+          min 81.2309  max 200
+  -- Solve :
+          min 81.2076  max 200
+  -- Solve :
+          min 81.1843  max 200
+  -- Solve :
+          min 81.161  max 200
+  -- Solve :
+          min 81.1377  max 200
+  -- Solve :
+          min 81.1144  max 200
+  -- Solve :
+          min 81.0912  max 200
+  -- Solve :
+          min 81.068  max 200
+  -- Solve :
+          min 81.0448  max 200
+  -- Solve :
+          min 81.0216  max 200
+  -- Solve :
+          min 80.9984  max 200
+  -- Solve :
+          min 80.9753  max 200
+  -- Solve :
+          min 80.9522  max 200
+  -- Solve :
+          min 80.9291  max 200
+  -- Solve :
+          min 80.906  max 200
+  -- Solve :
+          min 80.8829  max 200
+  -- Solve :
+          min 80.8599  max 200
+  -- Solve :
+          min 80.8368  max 200
+  -- Solve :
+          min 80.8138  max 200
+  -- Solve :
+          min 80.7908  max 200
+  -- Solve :
+          min 80.7678  max 200
+  -- Solve :
+          min 80.7449  max 200
+  -- Solve :
+          min 80.7219  max 200
+  -- Solve :
+          min 80.699  max 200
+  -- Solve :
+          min 80.6761  max 200
+  -- Solve :
+          min 80.6532  max 200
+  -- Solve :
+          min 80.6304  max 200
+  -- Solve :
+          min 80.6075  max 200
+  -- Solve :
+          min 80.5847  max 200
+  -- Solve :
+          min 80.5619  max 200
+  -- Solve :
+          min 80.5391  max 200
+  -- Solve :
+          min 80.5164  max 200
+  -- Solve :
+          min 80.4936  max 200
+  -- Solve :
+          min 80.4709  max 200
+  -- Solve :
+          min 80.448  max 200
+  -- Solve :
+          min 80.4252  max 200
+  -- Solve :
+          min 80.4023  max 200
+  -- Solve :
+          min 80.3795  max 200
+  -- Solve :
+          min 80.3567  max 200
+  -- Solve :
+          min 80.334  max 200
+  -- Solve :
+          min 80.3112  max 200
+  -- Solve :
+          min 80.2885  max 200
+  -- Solve :
+          min 80.2658  max 200
+  -- Solve :
+          min 80.2431  max 200
+  -- Solve :
+          min 80.2204  max 200
+  -- Solve :
+          min 80.1978  max 200
+  -- Solve :
+          min 80.1752  max 200
+  -- Solve :
+          min 80.1526  max 200
+  -- Solve :
+          min 80.13  max 200
+  -- Solve :
+          min 80.1074  max 200
+  -- Solve :
+          min 80.0848  max 200
+  -- Solve :
+          min 80.0623  max 200
+  -- Solve :
+          min 80.0398  max 200
+  -- Solve :
+          min 80.0173  max 200
+  -- Solve :
+          min 79.9948  max 200
+  -- Solve :
+          min 79.9724  max 200
+  -- Solve :
+          min 79.95  max 200
+  -- Solve :
+          min 79.9276  max 200
+  -- Solve :
+          min 79.9052  max 200
+  -- Solve :
+          min 79.8828  max 200
+  -- Solve :
+          min 79.8605  max 200
+  -- Solve :
+          min 79.8381  max 200
+  -- Solve :
+          min 79.8158  max 200
+  -- Solve :
+          min 79.7935  max 200
+  -- Solve :
+          min 79.7713  max 200
+  -- Solve :
+          min 79.749  max 200
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\ejercicio_1.edp

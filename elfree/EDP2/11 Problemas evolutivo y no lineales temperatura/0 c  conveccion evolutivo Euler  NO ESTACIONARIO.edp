@@ -1,0 +1,61 @@
+int n=40;
+
+real t, T=1., dt=0.01;
+
+real h,ufluid;
+h=80;
+ufluid=50;
+
+real pi2=2*pi;
+border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+
+border aa (t=1,-1) {x=t;y=1;label=3;};
+border bb (t=1,-1) {x=-1;y=t;label=3;};
+border cc (t=-1,1) {x=t;y=-1;label=3;};
+border dd (t=-1,1) {x=1;y=t;label=3;};
+
+mesh malla = buildmesh(aa(n)+bb(n)+cc(n)+dd(n)+e(-2*n));
+
+real kx,ky,den,cap,a;
+den=1;cap=1; 
+
+// VALORES DE den cap  QUEHACEN CONVERJER RAPIDAMENTE A LA SOLUCION ESTACIONARIA
+a=den*cap;
+kx=1.0;    
+ky=1.0;
+
+fespace Vh(malla,P2);
+Vh uoldt,u,uu,v; 
+
+// u es la incognita, v es la funcion test y oldU es la solucion en
+// el instante anterior
+// si no decimos nada el primer valor sera cero, pues todas las variables
+// automaticamente al definirse son puestas todas a cero
+
+
+problem calor (u,v) =
+int2d (malla)  (a*u*v/dt ) - int2d(malla) (a*uoldt*v/dt)+
+int2d (malla)(kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
++ int1d(malla,2)(h*u*v)
+-int1d(malla,2)(h*ufluid*v)
++ on (3,u=20);
+
+uoldt=20;
+
+for(t=0;t<T;t+=dt) // bucle de iteraciones en el tiempo t desde t=0 hasta t=T
+		   // incrementandose t en t+dt
+{ 
+   calor; // problema lineal
+   uoldt=u;
+  plot(uoldt, cmm=" tiempo ="+t, nbiso=30,value=1);
+x=0.7;
+y=0.7;
+uu=u(x,y); // temperatura en punto (x,y)
+cout << " u = " <<uu<<endl; // plotea en pantalla
+} 
+ 
+Vh qx=- kx*dx(u);
+Vh qy= -ky*dy(u);
+// qx flujo de calor en direccion x
+// qy flujo de calor en direccion y
+plot([qx,qy],wait=1,fill=1);

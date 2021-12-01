@@ -1,0 +1,56 @@
+// APLICACION DE CÁLCULO DE MASAS DE AIRE EN EL INTERIOR DE UNA CASA 
+// Alumno: José Manuel Díaz González 
+//Profesor: Gabriel Winter Althaus 
+// Asignatura: Energía, Medioambiente y Edificación 
+// Se considera una casa de 42 metros cuadrados. 
+
+int n=20; 
+
+// Definimos los contornos de la casa y sus estancias. 
+
+border a1 (t=0,0.75) {x=t;y=0;label=2;}; 
+border a2 (t=0.75,2.25) {x=t;y=0;label=2;}; //Ventana Dormitorio Principal 
+border a3 (t=2.25,3) {x=t;y=0;label=2;}; 
+border a8 (t=0,3) {x=3;y=t;label=2;}; 
+border a9 (t=3,3.1) {x=t;y=3;label=2;}; 
+border a10 (t=3,0) {x=3.1;y=t;label=2;}; 
+border a4 (t=3.1,3.75) {x=t;y=0;label=1;}; //Acceso a la sala 
+border a5 (t=3.75,4.125) {x=t;y=0;label=2;}; 
+border a6 (t=4.125,5.625) {x=t;y=0;label=2;}; //Ventana de la sala 
+border a7 (t=5.625,6) {x=t;y=0;label=2;} 
+border b1 (t=0,1.25) {x=6;y=t;label=2;}; 
+border b2 (t=1.25,2.75) {x=6;y=t;label=2;}; //Ventana Sala 
+border b3 (t=2.75,4) {x=6;y=t;label=2;}; 
+border b4 (t=4,4.75) {x=6;y=t;label=2;}; 
+border b5 (t=4.75,6.25) {x=6;y=t;label=2;}; // Ventana Cocina 
+border b6 (t=6.25,7) {x=6;y=t;label=2;}; 
+border c1 (t=6,5.625) {x=t;y=7;label=2;}; 
+border c2 (t=5.625,4.125) {x=t;y=7;label=2;}; //Ventana Cocina 
+border c3 (t=4.125,3.75) {x=t;y=7;label=2;}; 
+border c4 (t=3.75,3.1) {x=t;y=7;label=2;}; //Acceso Cocina 
+border c8 (t=7,4.5) {x=3.1;y=t;label=2;}; 
+border c9 (t=3.1,3) {x=t;y=4.5;label=2;}; 
+border c10 (t=4.5,7) {x=3;y=t;label=2;}; 
+border c5 (t=3,2.25) {x=t;y=7;label=2;}; 
+border c6 (t=2.25,0.75) {x=t;y=7;label=2;}; //Ventana Dormitorio 
+border c7 (t=0.75,0) {x=t;y=7;label=2;}; 
+border d1 (t=7,6.5) {x=0;y=t;label=2;}; 
+border d2 (t=6.5,5) {x=0;y=t;label=3;}; //Ventana Dormitorio 
+border d3 (t=5,4.6) {x=0;y=t;label=2;}; 
+border d10 (t=0,2.25) {x=t;y=4.6;label=2;}; 
+border d11 (t=4.6,3.75) {x=2.25;y=t;label=2;}; 
+border d12 (t=2.25,2.15) {x=t;y=3.75;label=2;}; 
+border d13 (t=3.75,4.5) {x=2.15;y=t;label=2;}; 
+border d14 (t=2.15,0) {x=t;y=4.5;label=2;}; 
+border d4 (t=4.5,4.25) {x=0;y=t;label=2;}; 
+border d5 (t=4.25,3.25) {x=0;y=t;label=3;}; //Ventana Aseo 
+border d6 (t=3.25,3.1) {x=0;y=t;label=2;}; 
+border d15 (t=0,2.25) {x=t;y=3.1;label=2;}; 
+border d16 (t=3.1,3) {x=2.25;y=t;label=2;}; 
+border d17 (t=2.25,0) {x=t;y=3;label=2;}; 
+border d7 (t=3,2.25) {x=0;y=t;label=2;}; 
+
+border d8 (t=2.25,0.75) {x=0;y=t;label=3;}; //Ventana Dormitorio Principal 
+border d9 (t=0.75,0) {x=0;y=t;label=2;}; 
+mesh Th = buildmesh(a1(n)+a2(n)+a3(n)+a4(n)+a5(n)+a6(n)+a7(n)+a8(n)+a9(n)+a10(n)+b1(n)+b2(n)+b3(n/2)+b4(n)+b5(n)+b6(n)+c1(n)+c2(n)+c3(n)+c4(n)+c5(n)+c6(n)+c7(n)+c8(n/2)+c9(n)+c10(n)+d1(n/2)+d2(n)+d3(n)+d4(n)+d5(n)+d6(n)+d7(n)+d8(n)+d9(n)+d10(n)+d11(n)+d12(n)+d13(n)+d14(n/2)+d15(n/2)+d16(n)+d17(n/2)); 
+plot(Th, wait=1); 

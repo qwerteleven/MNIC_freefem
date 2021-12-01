@@ -1,0 +1,91 @@
+/* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+
+aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para calculo de velocidades */
+
+int n=50;
+int i=0;
+
+border a(t=0,1) {x=t;y=0;label=1;}
+border b(t=0,1) {x=1.;y=t;label=2;}
+border C(t=1,0) {x=t; y=1 ;label=3;}
+border d(t=1,0) {x=0.;y=t;label=4;}
+
+mesh Th = buildmesh(a(n)+b(n)+C(n)+d(n));
+plot (Th, wait=1);
+
+// ********************  aportacion de una fuente puntual  fp de intensidad AA , aplicada en el punto (A,B)   ***************
+
+border C2a(t=0, 2*pi) { x=0.2+0.0001*cos(t); y=0.3+0.0001*sin(t);label=8; }; 
+/* circulo de radio infinitesimal donde en el centro x=0.2  y=0.3 voy a considerar aplicado una fuente puntual */
+mesh mallafp = buildmesh (C2a(30)); // malla del circulo
+// mallafp es el mallado de un circulo infinitesimal que rodea a fuente puntual fp
+fespace Vhfp(mallafp,P2);
+Vhfp fp;// importante fp solo esta definida en la malla llamada mallaf1
+real AA=200; // fuente puntual de intensidad 200 en las unidades que corresponda , fuente aplicada en (A,B)
+real landa=1;
+real A=0.2, B=0.3;
+
+fp=AA*exp(-landa*((x-A)^2+(y-B)^2));
+real areafuentepuntual= int2d(mallafp)(1.);  // es el area del circulo infinitesimal que rodea a la fuente puntual fp
+
+//   **************************************************************************************************************************
+
+real dt=0.00001,t=0;
+real alpha=1/dt;
+
+fespace Vh(Th,P2);
+Vh c,v,u1,u2,coldt;
+
+u1=10000*(y-0.5)*(x-x*x);  // componente en eje x de la velocidad, aqui dato , en general calcular resolv ecuac de Navier-Stokes
+u2=10000*(0.5-x)*(y-y*y);  // componente en eje y de la velocidad, aqui dato , en general calcular resolv ecuac de Navier-Stokes
+plot([u1,u2],wait=1);
+
+
+
+problem convecdif0 (c,v)=       // PARA LA PRIMERA ITERACION DE TIEMPO , QUE ES CUANDO CONSIDERO UNICAMENTE EL VERTIDO fp
+
+int2d (Th)  ( c*v/dt)  - int2d(Th)(coldt*v/dt) // derivada parcial resp tiempo
+
++int2d(Th) (u1*dx(c)*v+u2*dy(c)*v) // termino nuevo de conveccion
+
++int2d (Th) ( dx(c)*dx(v)+dy(c)*dy(v) ) // metodo de Euler en estos terminos difusivos
+
+-int2d(mallafp)((fp/areafuentepuntual)*v)  // ESTA INTEGRAL ES PARA TENER EN CUENTA LA CONTRIBUCION DE LA FUENTE PUNTUAL
+
+ + on (4,c=0)
+ + on (2,c=1);
+
+
+
+// *************************************************************
+
+problem convecdif (c,v)=      // PARA DESPUES DE LA PRIMERA ITERACION DE TIEMPO
+
+int2d (Th)  ( c*v/dt)  - int2d(Th)(coldt*v/dt) // derivada parcial resp tiempo
+
++int2d(Th) (u1*dx(c)*v+u2*dy(c)*v) // termino nuevo de conveccion
+
++int2d (Th) ( dx(c)*dx(v)+dy(c)*dy(v) ) // metodo de Euler en estos terminos difusivos
+
+ + on (4,c=0)
+ + on (2,c=1);
+
+// *************************************************************
+
+
+convecdif0;   // CALCULA ANTES DE ITERAR EN EL TIEMPO  , calculando la solucion teniendo en cuenta la fuente puntual
+
+// AHORA CALCULA ITERANDO EN EL TIEMPO
+
+for (int m=0;m<250;m++)   // bucle de iteraciones de tiempo, REALIZO 250 ITERACIONES DE TIEMPO
+{
+t += dt;
+coldt=c;
+convecdif;   // sin tener en cuenta la fuente puntual 
+
+if ( !(m % 10)) //cada multiplo de 10 imprime el plot de la linea siguiente
+plot(c,cmm=" t="+t + ", min=" + c[].min + ", max=" + c[].max,value=1);
+
+
+} 
+

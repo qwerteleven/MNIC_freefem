@@ -1,0 +1,73 @@
+
+real B,H,C,D;
+int n=4;
+
+B=16.;
+H=6.;
+C=0.3;
+D=0.5;
+
+border a(t=0,B) {x=t;y=0;label=4;};// suelo
+border b(t=0,H) {x=B;y=t;label=4;}; //pared derecha
+border c1(t=B,0) {x=t;y=H;label=4;};//techo
+border c2(t=H,H-C) {x=0;y=t;label=4;};// distancia AireAcond al techo pared izda
+border c3(t=H-C,H-C-D) {x=0;y=t;label=1;};//entrada de aire
+border d(t=H-C-D,0) {x=0;y=t;label=4;};// pared izda
+
+mesh Th = buildmesh(a(B*n)+b(80)+
+c1(B*n)+c2(12)+c3(20)+d(50)); 
+plot(Th, wait=1);
+
+//...............................................
+
+fespace Vh(Th,P1);
+Vh w,u=0, v =0, p = 0, q=0;
+
+real nu = 0.000016; // air cinematic viscosity  m2/s for 30 ºC, 
+					
+real dt = 0.02;  // 
+
+real area= int2d(Th)(1.);
+
+real tmax1=120.;  // time end simulation
+real t;  
+int iter;
+iter=0;
+
+
+// **********************  Chorin algorithm to solve Navier Stokes  *****************************************
+
+
+for(t=0;t<tmax1;t+=dt)
+{
+	iter=iter+1;
+	Vh uold = u, vold = v, pold=p;
+	Vh f=convect([uold,vold],-dt,uold), 		g=convect([uold,vold],-dt,vold);
+
+	solve pb4u(u,w,init=n,solver=LU)
+	= int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+	- int2d(Th)((f/dt-dx(p))*w)
+	+ on(1,u=2.5)+on(4,u=0);
+
+
+	solve pb4v(v,w,init=n,solver=LU)
+	= int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+	- int2d(Th)((g/dt-dy(p))*w)
+	+ on(1,v=0)+on(4,v=0);
+
+	real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+
+	solve pb4p(q,w,init=n,solver=LU)
+	= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+	- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+	
+	real meanpq = int2d(Th)(pold - q)/area;
+
+	if(iter%5) {       // plotea cada 5 iteraciones
+	plot([u,v],cmm=" tiempo ="+t,value=1);}
+
+	p = pold-q-meanpq;
+	u = u + dx(q)*dt;
+	v = v + dy(q)*dt;
+
+}

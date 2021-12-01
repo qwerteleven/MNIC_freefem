@@ -1,0 +1,260 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\ejercicio completo clase 23nov2021.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+    2 :
+    3 : aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para
+calculo de velocidades */
+    4 :
+    5 :
+    6 :
+    7 : int n=100;
+    8 : int m=0;  // para contar iteraciones luego
+    9 :
+   10 : border a(t=20,0) {x=-12;y=t;label=1;}
+   11 : border b(t=-12,0) {x=t;y=0;label=2;}
+   12 : border c(t=0,20) {x=t; y=t ;label=4;}
+   13 : border d(t=20,-12) {x=t;y=20;label=3;}
+   14 :
+   15 : mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+   16 : plot (malla, wait=1);
+   17 :
+   18 :
+   19 : real dt=0.5,t=0;
+   20 : real alpha=1/dt;
+   21 :
+   22 : fespace Vh(malla,P1);
+   23 : Vh T,v,u1,u2,k,Toldt;
+   24 :
+   25 :
+   26 : // T es la incognita u
+   27 :
+   28 : // r e la cte del termino de reaccion
+   29 :
+   30 : real r=0.2;
+   31 :
+   32 : u1=2;// Wx
+   33 : u2=0; //Wy
+   34 : k=5;
+   35 :
+   36 : Toldt=100;
+   37 :
+   38 : plot([u1,u2],wait=1);
+   39 :
+   40 : problem convecdif (T,v)=
+   41 :
+   42 : int2d (malla)  ( T*v/dt)  - int2d(malla)(Toldt*v/dt) // derivada parcial resp tiempo
+   43 :
+   44 : +int2d(malla) (u1*dx(T)*v+u2*dy(T)*v) // termino nuevo de conveccion
+   45 :
+   46 : +int2d (malla) (k*dx(T)*dx(v)+k*dy(T)*dy(v) ) // metodo de Euler en estos terminos difusivos
+   47 :
+   48 : -int1d(malla,2)(10*k*v) -int1d(malla,3)(10*k*v)
+   49 :
+   50 : +int2d(malla) (r*T*v)
+   51 :
+   52 :  + on (1,T=100)
+   53 :  + on (4,T=200);
+   54 :
+   55 :
+   56 : real Tmax=600;
+   57 :
+   58 :
+   59 : for(t=0;t<Tmax;t+=dt)
+   60 :
+   61 : {
+   62 :
+   63 : m=m+1;
+   64 :
+   65 : Toldt=T;
+   66 : convecdif;
+   67 :
+   68 : if ( !(m % 10))             //cada multiplo de 10 imprime el plot de la linea siguiente
+   69 : plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1);
+   70 :
+   71 : }
+   72 :
+   73 :  sizestack + 1024 =3952  ( 2928 )
+ 
+  --  mesh:  Nb of Triangles =  16956, Nb of Vertices 8679
+  -- Solve :
+          min 0.489139  max 200
+  -- Solve :
+          min 1.94034  max 200.233
+  -- Solve :
+          min 4.43041  max 200.953
+  -- Solve :
+          min 7.73529  max 201.215
+  -- Solve :
+          min 11.5178  max 201.348
+  -- Solve :
+          min 15.4968  max 201.427
+  -- Solve :
+          min 19.442  max 201.48
+  -- Solve :
+          min 23.1982  max 201.516
+  -- Solve :
+          min 26.6838  max 201.543
+  -- Solve :
+          min 29.8567  max 201.564
+  -- Solve :
+          min 32.6837  max 201.58
+  -- Solve :
+          min 35.1582  max 201.594
+  -- Solve :
+          min 37.2928  max 201.606
+  -- Solve :
+          min 39.112  max 201.616
+  -- Solve :
+          min 40.6342  max 201.625
+  -- Solve :
+          min 41.8928  max 201.632
+  -- Solve :
+          min 42.9352  max 201.639
+  -- Solve :
+          min 43.7938  max 201.645
+  -- Solve :
+          min 44.4698  max 201.65
+  -- Solve :
+          min 45.0179  max 201.655
+  -- Solve :
+          min 45.4622  max 201.659
+  -- Solve :
+          min 45.8216  max 201.662
+  -- Solve :
+          min 46.1115  max 201.665
+  -- Solve :
+          min 46.345  max 201.668
+  -- Solve :
+          min 46.5327  max 201.67
+  -- Solve :
+          min 46.6834  max 201.672
+  -- Solve :
+          min 46.8042  max 201.673
+  -- Solve :
+          min 46.8965  max 201.675
+  -- Solve :
+          min 46.9685  max 201.676
+  -- Solve :
+          min 47.0259  max 201.677
+  -- Solve :
+          min 47.0717  max 201.678
+  -- Solve :
+          min 47.1082  max 201.678
+  -- Solve :
+          min 47.1374  max 201.679
+  -- Solve :
+          min 47.1606  max 201.679
+  -- Solve :
+          min 47.1791  max 201.68
+  -- Solve :
+          min 47.1938  max 201.68
+  -- Solve :
+          min 47.2055  max 201.68
+  -- Solve :
+          min 47.2149  max 201.68
+  -- Solve :
+          min 47.2223  max 201.68
+  -- Solve :
+          min 47.2282  max 201.681
+  -- Solve :
+          min 47.2329  max 201.681
+  -- Solve :
+          min 47.2366  max 201.681
+  -- Solve :
+          min 47.2396  max 201.681
+  -- Solve :
+          min 47.242  max 201.681
+  -- Solve :
+          min 47.2439  max 201.681
+  -- Solve :
+          min 47.2454  max 201.681
+  -- Solve :
+          min 47.2465  max 201.681
+  -- Solve :
+          min 47.2475  max 201.681
+  -- Solve :
+          min 47.2482  max 201.681
+  -- Solve :
+          min 47.2488  max 201.681
+  -- Solve :
+          min 47.2493  max 201.681
+  -- Solve :
+          min 47.2497  max 201.681
+  -- Solve :
+          min 47.25  max 201.681
+  -- Solve :
+          min 47.2502  max 201.681
+  -- Solve :
+          min 47.2504  max 201.681
+  -- Solve :
+          min 47.2506  max 201.681
+  -- Solve :
+          min 47.2507  max 201.681
+  -- Solve :
+          min 47.2508  max 201.681
+  -- Solve :
+          min 47.2509  max 201.681
+  -- Solve :
+          min 47.2509  max 201.681
+  -- Solve :
+          min 47.251  max 201.681
+  -- Solve :
+          min 47.251  max 201.681
+  -- Solve :
+          min 47.251  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+  -- Solve :
+          min 47.2511  max 201.681
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\ejercicio completo clase 23nov2021.edp

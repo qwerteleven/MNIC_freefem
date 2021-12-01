@@ -1,0 +1,168 @@
+/* CALENTAMIENTO INTERNO DE UN BLOQUE DE CONSTRUCCION CON 3 // HUECOS DE AIRE SOMETIDO A RADIACION TERMICA EN LADO DERECHO QUE EL AIRE ESTA IRRADIANDO A 700 º C.
+ 
+EL LADO IZQUIERDO CONSIDERAMOS AIRE A TEMPERATURA DE 20º C
+
+LOS RESTANTES LADOS ESTÃN EN CONTACTO CON OTROS BLOQUES.
+
+PROBLEMA NO LINEAL POR CONDUCTIVIDAD DEPENDIENTE DE LA TEMPERATURA EN LAS PAREDES  ADEMAS DEL FLUJO DE RADIACION
+
+CONSIDERAMOS EL PROBLEMA TRANSITORIO O EVOLUTIVO EN EL TIEMPO HASTA LLEGAR A LA SOLUCION ESTACIONARIA
+
+*/
+
+border a1 (t=0.,0.025) {x=t;y=0.;label=3;};
+border a2(t=0.,0.005) {x=0.025;y=t;label=3;};
+border a3 (t=0.025,0.175) {x=t;y=0.005;label=3;};
+border a4 (t=0.005,0.) {x=0.175;y=t;label=3;};
+border a5 (t=0.175,0.20) {x=t;y=0.;label=3;};
+
+border a6 (t=0,0.50) {x=0.20;y=t;label=2;}; // CONTORMO LADO DCHO   
+
+border a7 (t=0.20,0.175) {x=t;y=0.50;label=3;};
+border a8 (t=0.5,0.495) {x=0.175;y=t;label=3;};
+border a9 (t=0.175,0.025) {x=t;y=0.495;label=3;};
+border a10 (t=0.495,0.50) {x=0.025;y=t;label=3;};
+border a11 (t=0.025,0.) {x=t;y=0.50;label=3;};
+
+border a12 (t=0.50,0.) {x=0;y=t;label=1;};    //Lado izquierdo del bloque que estÃ¡ a temperatura impuesta (condiciÃ³n Dirichlet) 
+
+
+border b1 (t=0.025,0.175) {x=t;y=0.03;label=3;};
+border b2 (t=0.03,0.16) {x=0.175;y=t;label=3;};
+border b3 (t=0.175,0.025) {x=t;y=0.16;label=3;};
+border b4 (t=0.16,0.03) {x=0.025;y=t;label=3;};
+
+border c1 (t=0.025,0.175) {x=t;y=0.185;label=3;};
+border c2 (t=0.185,0.315) {x=0.175;y=t;label=3;};
+border c3 (t=0.175,0.025) {x=t;y=0.315;label=3;};
+border c4 (t=0.315,0.185) {x=0.025;y=t;label=3;};
+
+border d1 (t=0.025,0.175) {x=t;y=0.34;label=3;};
+border d2 (t=0.34,0.47) {x=0.175;y=t;label=3;};
+border d3 (t=0.175,0.025) {x=t;y=0.47;label=3;};
+border d4 (t=0.47,0.34) {x=0.025;y=t;label=3;};
+
+int n=80;
+mesh malla = buildmesh(a1(n/4)+a2(n/8)+a3(n)+a4(n/8)+a5(n/4)+a6(2*n)+
+                       a7(n/4)+a8(n/8)+a9(n)+a10(n/8)+a11(n/4)+a12(2*n)+
+                       b1(n/2)+b2(n/2)+b3(n/2)+b4(n/2)+
+                       c1(n/2)+c2(n/2)+c3(n/2)+c4(n/2)+
+                       d1(n/2)+d2(n/2)+d3(n/2)+d4(n/2));
+plot(malla,wait=1);
+
+//Definimos el problema que queremos resolver
+//-------------------------------------------
+fespace Vh(malla,P1);
+
+Vh reg=region;
+int material1 = reg(0.01,0.01); 
+/* todos los puntos (x,y) que tienen los mismos contornos que los contornos del punto x=0.01  y=0.01  forman el material 1 */
+
+int aire1 = reg(0.10,0.095);
+int aire2 = reg(0.10,0.25);
+int aire3 = reg(0.10,0.405);
+
+plot (reg, wait=1,fill=1);
+
+Vh u,v,uold, uoldt,uu,kk,B,uc,error;
+
+/* despues haremos :
+ kk = k1(u)*(region==material1)
+      + k2(u)*(region==aire1)
+      + k2(u)*(region==aire2)
+      + k2(u)*(region==aire3);
+
+ k1 y k2 se evaluaran en u calculada en la iteracion anterior que se denomina uold   
+esto es linealizacion segun Metodo de Punto Fijo */
+
+// Conductividad termica del picon-hormigon: aproximadamente 0.38 a 20ºC y 0.5 a 700 ºC
+
+func real k1(real T) { return (0.3764705 + 0.00017647059*T);}  
+
+func real k2(real T) 
+{ return (0.0244706 +(0.00006)*(T-273.15));}
+                                            
+real sigma = 5.6704*1e-8; //Constante de Stefan-Boltzmann [W/m2.K4]
+real emisivity = 0.8;
+
+real uf = 700 + 273.15; //Temperatura UR del foco caliente [ÂºK]
+real u0 = 20 + 273.15;  //Condicion Dirichlet del contorno exterior (cuadrado) [ÂºK]
+
+//  luego haremos B = (u^2+uf^2)*(u+uf) segun apuntes ver ppt
+
+real hc=60; //W/m2 k // TEST PARA QUE RESULTE TEMP A LA IZDA CASI LA TEMP AIRE INTERIOR  DE 20 ºC
+real epsilon=1.e-12;
+
+real dt=0.1;
+real T=1.;
+
+
+real den,cap,a;
+den=1; cap=1; // con el objetivo de obtener de forma rapida la solucion estacionaria 
+
+a=den*cap;
+uoldt=293.15;
+
+// Temperatura en kelvin
+
+
+problem calor (u,v) = 
+int2d(malla)(epsilon*u*v)+
+int2d (malla)(a*u*v/dt)-int2d(malla)(a*uoldt*v/dt)
+
++int2d(malla)(kk*dx(u)*dx(v)+kk*dy(u)*dy(v))
+
++ int1d(malla,2) (sigma*emisivity*B*u*v)
+- int1d(malla,2) (sigma*emisivity*B*uf*v)
+
++ int1d(malla,1) (hc*u*v) - int1d(malla,1) (hc*u0*v);
+
+//+ on(1,u=u0);
+
+
+uoldt=u0;
+
+for(real t=0;t<T;t+=dt) // bucle de iteraciones en el tiempo t desde t=0 hasta t=T
+
+{
+
+uold=u0;
+real ErrorL2 = 1.; 
+real ErrorH1 = 1.; 
+
+while(sqrt(ErrorL2+ErrorH1) > 1.e-6)
+{
+	//Conductividad térmica 
+	kk = k1(uold-273.15)*(region==material1) 
+           + k2(uold)*(region==aire1)
+           + k2(uold)*(region==aire2)
+           + k2(uold)*(region==aire3);
+
+	B = (uold^2 + uf^2)*(uold+uf);
+	calor;
+	uc = u-273.15;
+	plot(uc, value=1);
+	error=u-uold;
+	ErrorH1 = int2d(malla)(dx(error)^2+dy(error)^2);
+	ErrorL2 = int2d(malla)(error^2);
+	cout << " Error seminorma H1 = " <<sqrt( ErrorH1) <<endl;
+	cout << " Error L2 = " << sqrt(ErrorL2) <<endl;
+	cout << " Error norma H1 = " << sqrt(ErrorL2+ErrorH1) <<endl;
+	uold=u;  
+}
+
+uoldt=uold;
+
+x=19.9;
+y=0.1;
+uu=u(x,y); // temperatura en punto (x,y)
+cout << " u = " <<uu<<endl; // plotea en pantalla
+
+
+
+
+
+}
+
+
+

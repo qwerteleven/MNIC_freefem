@@ -1,0 +1,172 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7 vertido puntual inicial contam ecuac convecciondifusion .edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+    2 :
+    3 : aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para
+calculo de velocidades */
+    4 :
+    5 : int n=50;
+    6 : int i=0;
+    7 :
+    8 : border a(t=0,1) {x=t;y=0;label=1;}
+    9 : border b(t=0,1) {x=1.;y=t;label=2;}
+   10 : border C(t=1,0) {x=t; y=1 ;label=3;}
+   11 : border d(t=1,0) {x=0.;y=t;label=4;}
+   12 :
+   13 : mesh Th = buildmesh(a(n)+b(n)+C(n)+d(n));
+   14 : plot (Th, wait=1);
+   15 :
+   16 : // ********************  aportacion de una fuente puntual  fp de intensidad AA , aplicada en el punto (A,B)   ***************
+   17 :
+   18 : border C2a(t=0, 2*pi) { x=0.2+0.0001*cos(t); y=0.3+0.0001*sin(t);label=8; };
+   19 : /* circulo de radio infinitesimal donde en el centro x=0.2  y=0.3 voy a considerar aplicado una fuente puntual */
+   20 : mesh mallafp = buildmesh (C2a(30)); // malla del circulo
+   21 : // mallafp es el mallado de un circulo infinitesimal que rodea a fuente puntual fp
+   22 : fespace Vhfp(mallafp,P2);
+   23 : Vhfp fp;// importante fp solo esta definida en la malla llamada mallaf1
+   24 : real AA=200; // fuente puntual de intensidad 200 en las unidades que corresponda , fuente aplicada en (A,B)
+   25 : real landa=1;
+   26 : real A=0.2, B=0.3;
+   27 :
+   28 : fp=AA*exp(-landa*((x-A)^2+(y-B)^2));
+   29 : real areafuentepuntual= int2d(mallafp)(1.);  // es el area del circulo infinitesimal que rodea a la fuente puntual fp
+   30 :
+   31 : //   **************************************************************************************************************************
+   32 :
+   33 : real dt=0.00001,t=0;
+   34 : real alpha=1/dt;
+   35 :
+   36 : fespace Vh(Th,P2);
+   37 : Vh c,v,u1,u2,coldt;
+   38 :
+   39 : u1=10000*(y-0.5)*(x-x*x);  // componente en eje x de la velocidad, aqui dato , en general calcular resolv ecuac
+de Navier-Stokes
+   40 : u2=10000*(0.5-x)*(y-y*y);  // componente en eje y de la velocidad, aqui dato , en general calcular resolv ecuac
+de Navier-Stokes
+   41 : plot([u1,u2],wait=1);
+   42 :
+   43 :
+   44 :
+   45 : problem convecdif0 (c,v)=       // PARA LA PRIMERA ITERACION DE TIEMPO , QUE ES CUANDO CONSIDERO UNICAMENTE EL VERTIDO fp
+   46 :
+   47 : int2d (Th)  ( c*v/dt)  - int2d(Th)(coldt*v/dt) // derivada parcial resp tiempo
+   48 :
+   49 : +int2d(Th) (u1*dx(c)*v+u2*dy(c)*v) // termino nuevo de conveccion
+   50 :
+   51 : +int2d (Th) ( dx(c)*dx(v)+dy(c)*dy(v) ) // metodo de Euler en estos terminos difusivos
+   52 :
+   53 : -int2d(mallafp)((fp/areafuentepuntual)*v)  // ESTA INTEGRAL ES PARA TENER EN CUENTA LA CONTRIBUCION DE LA FUENTE PUNTUAL
+   54 :
+   55 :  + on (4,c=0)
+   56 :  + on (2,c=1);
+   57 :
+   58 :
+   59 :
+   60 : // *************************************************************
+   61 :
+   62 : problem convecdif (c,v)=      // PARA DESPUES DE LA PRIMERA ITERACION DE TIEMPO
+   63 :
+   64 : int2d (Th)  ( c*v/dt)  - int2d(Th)(coldt*v/dt) // derivada parcial resp tiempo
+   65 :
+   66 : +int2d(Th) (u1*dx(c)*v+u2*dy(c)*v) // termino nuevo de conveccion
+   67 :
+   68 : +int2d (Th) ( dx(c)*dx(v)+dy(c)*dy(v) ) // metodo de Euler en estos terminos difusivos
+   69 :
+   70 :  + on (4,c=0)
+   71 :  + on (2,c=1);
+   72 :
+   73 : // *************************************************************
+   74 :
+   75 :
+   76 : convecdif0;   // CALCULA ANTES DE ITERAR EN EL TIEMPO  , calculando la solucion teniendo en cuenta la fuente puntual
+   77 :
+   78 : // AHORA CALCULA ITERANDO EN EL TIEMPO
+   79 :
+   80 : for (int m=0;m<250;m++)   // bucle de iteraciones de tiempo, REALIZO 250 ITERACIONES DE TIEMPO
+   81 : {
+   82 : t += dt;
+   83 : coldt=c;
+   84 : convecdif;   // sin tener en cuenta la fuente puntual
+   85 :
+   86 : if ( !(m % 10)) //cada multiplo de 10 imprime el plot de la linea siguiente
+   87 : plot(c,cmm=" t="+t + ", min=" + c[].min + ", max=" + c[].max,value=1);
+   88 :
+   89 :
+   90 : }
+   91 :
+   92 :  sizestack + 1024 =7416  ( 6392 )
+ 
+  --  mesh:  Nb of Triangles =   5938, Nb of Vertices 3070
+  --  mesh:  Nb of Triangles =    166, Nb of Vertices 99
+  -- Solve :
+          min -2.23475  max 7.51102
+  -- Solve :
+          min -0.975625  max 4.74434
+  -- Solve :
+          min -0.355454  max 2.6732
+  -- Solve :
+          min -0.158494  max 2.00973
+  -- Solve :
+          min -0.10951  max 1.94306
+  -- Solve :
+          min -0.0637864  max 1.62477
+  -- Solve :
+          min -0.0356258  max 1.2977
+  -- Solve :
+          min -0.0322953  max 1.12791
+  -- Solve :
+          min -0.0214562  max 1.01197
+  -- Solve :
+          min -0.0114144  max 1
+  -- Solve :
+          min -0.00631713  max 1
+  -- Solve :
+          min -0.00555839  max 1
+  -- Solve :
+          min -0.00491016  max 1
+  -- Solve :
+          min -0.0041653  max 1
+  -- Solve :
+          min -0.00341967  max 1
+  -- Solve :
+          min -0.00273317  max 1
+  -- Solve :
+          min -0.00213571  max 1
+  -- Solve :
+          min -0.00163648  max 1
+  -- Solve :
+          min -0.00123233  max 1
+  -- Solve :
+          min -0.000974371  max 1
+  -- Solve :
+          min -0.00096765  max 1
+  -- Solve :
+          min -0.000957587  max 1
+  -- Solve :
+          min -0.000944852  max 1
+  -- Solve :
+          min -0.000930047  max 1
+  -- Solve :
+          min -0.000913694  max 1
+  -- Solve :
+          min -0.000896235  max 1
+  -- Solve :
+          min -0.000878033  max 1
+  -- Solve :
+          min -0.000859377  max 1
+  -- Solve :
+          min -0.000840496  max 1
+  -- Solve :
+          min -0.000821562  max 1
+  -- Solve :
+          min -0.000802709  max 1
+  -- Solve :
+          min -0.000784039  max 1
+  -- Solve :
+          min -0.000765632  max 1
+  -- Solve :
+          min -0.000747554  max 1
+  -- Solve :
+          min -0.000729859  max 1
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7 vertido puntual inicial contam ecuac convecciondifusion .edp

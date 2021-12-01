@@ -1,0 +1,70 @@
+/* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+
+aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para calculo de velocidades */
+
+int n=100;
+int m=0;  // para contar iteraciones luego
+
+border a(t=20,0) {x=-12;y=t;label=1;}
+border b(t=-12,0) {x=t;y=0;label=2;}
+border c(t=0,20) {x=t; y=t ;label=4;}
+border d(t=20,-12) {x=t;y=20;label=3;}
+
+mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+plot (malla, wait=0.1);
+
+
+real dt=0.5,t=0;
+real alpha=1/dt;
+
+fespace Vh(malla,P1);
+Vh T,v,u1,u2,k,Toldt;
+
+
+// T es la incognita u
+
+// r e la cte del termino de reaccion
+
+real r=0.2;
+
+u1=2;// Wx
+u2=0; //Wy
+k=5;
+
+Toldt=100;
+
+plot([u1,u2],wait=1);
+
+problem convecdif (T,v)=
+
+int2d (malla)  ( T*v/dt)  - int2d(malla)(Toldt*v/dt) // derivada parcial resp tiempo
+
++int2d(malla) (u1*dx(T)*v+u2*dy(T)*v) // termino nuevo de conveccion
+
++int2d (malla) (k*dx(T)*dx(v)+k*dy(T)*dy(v) ) // metodo de Euler en estos terminos difusivos
+
+-int1d(malla,2)(10*k*v) -int1d(malla,3)(10*k*v) 
+
++int2d(malla) (r*T*v)
+
+ + on (1,T=100)
+ + on (4,T=200);
+
+ 
+real Tmax=600;
+
+
+for(t=0;t<Tmax;t+=dt) 
+
+{
+
+m=m+1;
+
+Toldt=T;
+convecdif;
+
+if ( !(m % 10))             //cada multiplo de 10 imprime el plot de la linea siguiente
+plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1);
+
+} 
+

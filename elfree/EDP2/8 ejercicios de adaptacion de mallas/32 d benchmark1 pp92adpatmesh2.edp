@@ -1,0 +1,46 @@
+//BENCHMARK O TEST CONDUCC Y CONVECC CON FUERTE SINGULARIDAD EN UN PUNTO
+
+// resolucion con adaptacion de mallas
+
+int n=10;
+
+border d (t=0,0.6) {x=t;y=0;label=1;};
+border c (t=0,1) {x=0.6;y=t;label=2;};
+border b (t=0.6,0) {x=t;y=1;label=2;};
+border a (t=1,0) {x=0;y=t;label=3;};
+
+mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+ 
+plot(malla,wait=1);
+
+real k,h,uf;
+k=52.;
+h=750.;
+uf=0;
+
+fespace Vh(malla,P2);
+Vh u,v,uu;
+
+problem laplace (u,v) =
+int2d (malla)(k*dx(u)*dx(v)+k*dy(u)*dy(v))+int1d (malla,2)(h*u*v)-int1d(malla,2)(h*uf*v)
++ on (1,u=100);
+ 
+ for(real i=0;i<3;i+=1) 
+{
+
+malla = adaptmesh(malla,u,err=0.0001,hmax=0.1,hmin=0.001,cutoff=1e-6,ratio=1.6,nbvx=9000,
+splitpbedge=2,power=1,abserror=true,nomeshgeneration=false,anisomax=1);
+plot (malla, wait=1);
+ 
+laplace;
+
+plot(u,value=1);
+
+x=0.6;
+y=0.2;
+
+uu=u(x,y);
+
+cout << " u = " <<uu<<endl;
+
+}

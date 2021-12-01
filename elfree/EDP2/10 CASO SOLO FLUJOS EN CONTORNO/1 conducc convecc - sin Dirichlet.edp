@@ -1,0 +1,46 @@
+//Definimos el dominio de estudio, creamos la malla y la dibujamos
+//----------------------------------------------------------------
+border a(t=-1,1) {x=t;y=-1;label=1;};
+border b(t=-1,1) {x=1;y=t;label=1;};
+border c(t=1,-1) {x=t;y=1;label=1;};
+border d(t=1,-1) {x=-1;y=t;label=1;};
+
+real pi2=2*pi;
+border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+
+int n=10;
+mesh malla = buildmesh(a(n)+b(14)+c(n)+d(14)+e(-4*n));
+plot(malla, wait=1);
+
+//Definimos el problema que queremos resolver
+//-------------------------------------------
+fespace Vh(malla,P2);
+Vh u,v,kx,ky; // u es temperatura en grados Celsius
+
+//Conductividad térmica constante
+kx=2.;  
+ky=2.;
+real hc=80.; //Coeficiente de convección y temperatura del fluido, p.e. aire, dentro de la circunferencia
+
+real uf=50.; 
+// temperatura aire o agua o fluido dentro del orifico, es decir en contacto con contorno label =2
+
+real hc2=18.; //Coeficiente de convección y temperatura del fluido, p.e. aire, en el exterior del cuadrado
+
+real uf2=20.; 
+// temperatura aire  exterior
+
+
+real epsilon=0.00000001;
+
+problem calor(u,v) = 
+int2d(malla) (epsilon*u*v)
++int2d(malla) (kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
++ int1d(malla,2) (hc*u*v) - int1d(malla,2) (hc*uf*v)
++ int1d(malla,1) (hc2*u*v) - int1d(malla,1) (hc2*uf2*v);
+//+ on(1,u=20);
+
+//Resolvemos el problema y dibujamos la solución 
+//----------------------------------------------
+calor;
+plot(u, value=1);

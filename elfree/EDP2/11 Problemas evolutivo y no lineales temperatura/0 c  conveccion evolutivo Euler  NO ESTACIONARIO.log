@@ -1,0 +1,237 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolutivo
+ESTACIONARIOEuler  NO ESTACIONARIO.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : int n=40;
+    2 :
+    3 : real t, T=1., dt=0.01;
+    4 :
+    5 : real h,ufluid;
+    6 : h=80;
+    7 : ufluid=50;
+    8 :
+    9 : real pi2=2*pi;
+   10 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+   11 :
+   12 : border aa (t=1,-1) {x=t;y=1;label=3;};
+   13 : border bb (t=1,-1) {x=-1;y=t;label=3;};
+   14 : border cc (t=-1,1) {x=t;y=-1;label=3;};
+   15 : border dd (t=-1,1) {x=1;y=t;label=3;};
+   16 :
+   17 : mesh malla = buildmesh(aa(n)+bb(n)+cc(n)+dd(n)+e(-2*n));
+   18 :
+   19 : real kx,ky,den,cap,a;
+   20 : den=1;cap=1;
+   21 :
+   22 : // VALORES DE den cap  QUEHACEN CONVERJER RAPIDAMENTE A LA SOLUCION ESTACIONARIA
+   23 : a=den*cap;
+   24 : kx=1.0;
+   25 : ky=1.0;
+   26 :
+   27 : fespace Vh(malla,P2);
+   28 : Vh uoldt,u,uu,v;
+   29 :
+   30 : // u es la incognita, v es la funcion test y oldU es la solucion en
+   31 : // el instante anterior
+   32 : // si no decimos nada el primer valor sera cero, pues todas las variables
+   33 : // automaticamente al definirse son puestas todas a cero
+   34 :
+   35 :
+   36 : problem calor (u,v) =
+   37 : int2d (malla)  (a*u*v/dt ) - int2d(malla) (a*uoldt*v/dt)+
+   38 : int2d (malla)(kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
+   39 : + int1d(malla,2)(h*u*v)
+   40 : -int1d(malla,2)(h*ufluid*v)
+   41 : + on (3,u=20);
+   42 :
+   43 : uoldt=20;
+   44 :
+   45 : for(t=0;t<T;t+=dt) // bucle de iteraciones en el tiempo t desde t=0 hasta t=T
+   46 :                    // incrementandose t en t+dt
+   47 : {
+   48 :    calor; // problema lineal
+   49 :    uoldt=u;
+   50 :   plot(uoldt, cmm=" tiempo ="+t, nbiso=30,value=1);
+   51 : x=0.7;
+   52 : y=0.7;
+   53 : uu=u(x,y); // temperatura en punto (x,y)
+   54 : cout << " u = " <<uu<<endl; // plotea en pantalla
+   55 : }
+   56 :
+   57 : Vh qx=- kx*dx(u);
+   58 : Vh qy= -ky*dy(u);
+   59 : // qx flujo de calor en direccion x
+   60 : // qy flujo de calor en direccion y
+   61 : plot([qx,qy],wait=1,fill=1);
+   62 :  sizestack + 1024 =4168  ( 3144 )
+ 
+  --  mesh:  Nb of Triangles =   6276, Nb of Vertices 3258
+  -- Solve :
+          min 20  max 46.1472
+ u = 20.0082
+  -- Solve :
+          min 20  max 47.5791
+ u = 20.0387
+  -- Solve :
+          min 20  max 48.0223
+ u = 20.1031
+  -- Solve :
+          min 20  max 48.2515
+ u = 20.2052
+  -- Solve :
+          min 20  max 48.3972
+ u = 20.3415
+  -- Solve :
+          min 20  max 48.5005
+ u = 20.504
+  -- Solve :
+          min 20  max 48.5787
+ u = 20.6833
+  -- Solve :
+          min 20  max 48.6404
+ u = 20.8708
+  -- Solve :
+          min 20  max 48.6907
+ u = 21.0591
+  -- Solve :
+          min 20  max 48.7326
+ u = 21.243
+  -- Solve :
+          min 20  max 48.768
+ u = 21.4185
+  -- Solve :
+          min 20  max 48.7982
+ u = 21.5834
+  -- Solve :
+          min 20  max 48.8243
+ u = 21.7363
+  -- Solve :
+          min 20  max 48.8469
+ u = 21.8767
+  -- Solve :
+          min 20  max 48.8667
+ u = 22.0046
+  -- Solve :
+          min 20  max 48.884
+ u = 22.1206
+  -- Solve :
+          min 20  max 48.8992
+ u = 22.2252
+  -- Solve :
+          min 20  max 48.9125
+ u = 22.3192
+  -- Solve :
+          min 20  max 48.9243
+ u = 22.4034
+  -- Solve :
+          min 20  max 48.9347
+ u = 22.4787
+  -- Solve :
+          min 20  max 48.9439
+ u = 22.5458
+  -- Solve :
+          min 20  max 48.952
+ u = 22.6057
+  -- Solve :
+          min 20  max 48.9591
+ u = 22.6589
+  -- Solve :
+          min 20  max 48.9655
+ u = 22.7063
+  -- Solve :
+          min 20  max 48.9711
+ u = 22.7484
+  -- Solve :
+          min 20  max 48.976
+ u = 22.7858
+  -- Solve :
+          min 20  max 48.9804
+ u = 22.8189
+  -- Solve :
+          min 20  max 48.9843
+ u = 22.8484
+  -- Solve :
+          min 20  max 48.9878
+ u = 22.8745
+  -- Solve :
+          min 20  max 48.9908
+ u = 22.8976
+  -- Solve :
+          min 20  max 48.9935
+ u = 22.9182
+  -- Solve :
+          min 20  max 48.9959
+ u = 22.9363
+  -- Solve :
+          min 20  max 48.998
+ u = 22.9525
+  -- Solve :
+          min 20  max 48.9999
+ u = 22.9668
+  -- Solve :
+          min 20  max 49.0016
+ u = 22.9794
+  -- Solve :
+          min 20  max 49.003
+ u = 22.9907
+  -- Solve :
+          min 20  max 49.0043
+ u = 23.0006
+  -- Solve :
+          min 20  max 49.0055
+ u = 23.0094
+  -- Solve :
+          min 20  max 49.0065
+ u = 23.0172
+  -- Solve :
+          min 20  max 49.0074
+ u = 23.0241
+  -- Solve :
+          min 20  max 49.0082
+ u = 23.0303
+  -- Solve :
+          min 20  max 49.009
+ u = 23.0357
+  -- Solve :
+          min 20  max 49.0096
+ u = 23.0405
+  -- Solve :
+          min 20  max 49.0101
+ u = 23.0448
+  -- Solve :
+          min 20  max 49.0106
+ u = 23.0486
+  -- Solve :
+          min 20  max 49.0111
+ u = 23.0519
+  -- Solve :
+          min 20  max 49.0115
+ u = 23.0549
+  -- Solve :
+          min 20  max 49.0118
+ u = 23.0575
+  -- Solve :
+          min 20  max 49.0121
+ u = 23.0598
+  -- Solve :
+          min 20  max 49.0124
+ u = 23.0619
+  -- Solve :
+          min 20  max 49.0126
+ u = 23.0637
+  -- Solve :
+          min 20  max 49.0128
+ u = 23.0653
+  -- Solve :
+          min 20  max 49.013
+ u = 23.0668
+  -- Solve :
+          min 20  max 49.0132
+ u = 23.068
+  -- Solve :
+          min 20  max 49.0133
+ u = 23.0692
+  -- Solve :
+          min 20  max 49.0135
+ u = 23.0702
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolESTACIONARIOutivo Euler  NO ESTACIONARIO.edp

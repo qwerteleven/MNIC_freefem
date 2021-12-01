@@ -1,0 +1,91 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\8 ejercicios de adaptacion de mallas\34 c benchmark1 pp92adpatmesh1.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : //BENCHMARK O TEST CONDUCC Y CONVECC CON FUERTE SINGULARIDAD EN UN PUNTO
+    2 :
+    3 : // resolucion con adaptacion de mallas
+    4 :
+    5 : int n=10;
+    6 :
+    7 : border a (t=0,0.6) {x=t;y=0;label=1;};
+    8 : border b (t=0,1) {x=0.6;y=t;label=2;};
+    9 : border c (t=0.6,0) {x=t;y=1;label=2;};
+   10 : border d (t=1,0) {x=0;y=t;label=3;};
+   11 :
+   12 : mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+   13 :
+   14 : plot(malla,wait=1);
+   15 :
+   16 : real k,h,uf;
+   17 : k=52.;
+   18 : h=60.;
+   19 : uf=80;
+   20 :
+   21 : fespace Vh(malla,P2);
+   22 : Vh u,v,uu;
+   23 :
+   24 : problem laplace (u,v) =
+   25 : int2d (malla)(k*dx(u)*dx(v)+k*dy(u)*dy(v))+int1d (malla,2)(h*u*v)-int1d(malla,2)(h*uf*v)
+   26 : + on (1,u=100);
+   27 :
+   28 :  for(real i=0;i<2;i+=1)
+   29 : {
+   30 :
+   31 : malla = adaptmesh(malla,u,err=0.001,hmax=0.01,hmin=0.001,cutoff=1e-6,ratio=1.6,nbvx=6000,
+   32 : splitpbedge=2,power=1,abserror=true,nomeshgeneration=false,anisomax=1);
+   33 : plot (malla, wait=1);
+   34 :
+   35 : laplace;
+   36 :
+   37 : plot(u, value=1);
+   38 :
+   39 : x=0.7;
+   40 : y=0.3;
+   41 :
+   42 : uu=u(x,y);
+   43 :
+   44 : cout << " u = " <<uu<<endl;
+   45 :
+   46 :
+   47 : //avion navier Stokes
+   48 :
+   49 : fespace Vh0(malla, P0);
+   50 : Vh0 h=hTriangle;
+   51 : real hmax=h[].max;
+   52 : real hmin=h[].min;
+   53 : cout << "hmax: " << hmax << "\n";
+   54 : cout << "hmin: " << hmin << "\n";
+   55 :
+   56 :
+   57 :
+   58 :
+   59 : }
+   60 :  sizestack + 1024 =2360  ( 1336 )
+ 
+  --  mesh:  Nb of Triangles =    188, Nb of Vertices 115
+  number of required edges : 0
+  -- adaptmesh statistics:  Nb triangles 11304 , h  min 0.00633998 , h max 0.0245447
+     area =  0.6 , M area = 5476.02 , M area/( |Khat| nt) 1.11875
+     infiny-regularity:  min 0.491889  max 2.23191
+     anisomax  2.80789, beta max = 1.24734 min  0.492349
+  --  mesh:  Nb of Triangles =  11304, Nb of Vertices 5810
+  -- Solve :
+          min 84.7821  max 100
+ u = 90.2643
+hmax: 0.0245447
+hmin: 0.00885557
+  number of required edges : 0
+ Warning: too few vertices to split all internal edges
+ We lost 1 edges. Sorry!
+  -- adaptmesh statistics:  Nb triangles 11666 , h  min 0.00234633 , h max 0.0253848
+     area =  0.6 , M area = 6057.7 , M area/( |Khat| nt) 1.19918
+     infiny-regularity:  min 0.518834  max 2.71149
+     anisomax  2.77276, beta max = 1.24608 min  0.443982
+  --  mesh:  Nb of Triangles =  11666, Nb of Vertices 6000
+  -- Solve :
+          min 84.7821  max 100
+ u = 90.3418
+hmax: 0.0253848
+hmin: 0.00299655
+times: compile 0.16s, execution 3.334s,  mpirank:0
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\8 ejercicios de adaptacion de mallas\34 c benchmark1 pp92adpatmesh1.edp

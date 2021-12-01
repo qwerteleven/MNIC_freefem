@@ -1,0 +1,248 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\12 NAVIER STOKES FLUJO INCOMPRESIBLE\23 a naca012 perfil ala.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 :
+    2 : real nu=1.45e-5; // viscosidad cinematica
+    3 : real ang,t;
+    4 :
+    5 : ang=10; // angulo alpha , angulo de ataque
+    6 :
+    7 : ang=ang*pi/180;
+    8 :
+    9 : real V=83.3;   //  m/s  , 300 m/h
+   10 :
+   11 : int nodos=120;
+   12 : int nodos1=60;
+   13 : int nodos2=120;
+   14 : real  dt,dtmax;
+   15 : real s0=clock();
+   16 : real TIME;
+   17 : real esca=0.76;
+   18 :
+   19 : border  a(t=0,2*pi)  {x=4.5*cos(t)-0.5; y=4.5*sin(t);label=1;}
+   20 :
+   21 : border  upper(t=0,1)  {x=t*esca;y=esca*(0.17735*sqrt(t)-0.075597*t-0.212836*(t^2)+0.17363*(t^3)-0.06254*(t^4));label=2;}
+   22 :
+   23 : border  lower(t=1,0)  {x=t*esca;y=-esca*(0.17735*sqrt(t)-0.075597*t-0.212836*(t^2)+0.17363*(t^3)-0.06254*(t^4));label=2;}
+   24 :
+   25 : border  c(t=0,2*pi)  {x=0.8*cos(t)+0.5;y=0.8*sin(t);}
+   26 :
+   27 :
+   28 : mesh    Zoom  =  buildmesh(c(nodos)+upper(nodos1)+lower(nodos1));
+   29 :
+   30 : mesh  Th  =  buildmesh(a(nodos)+upper(nodos1)+lower(nodos1));
+   31 : plot(Zoom, cmm="Malla Zoom",wait=1);
+   32 : plot(Th,cmm="Malla",wait=1);
+   33 :
+   34 : fespace Vh0(Th,P0);
+   35 : Vh0 h=hTriangle;
+   36 : real hmax=h[].max;
+   37 : real hmin=h[].min;
+   38 :
+   39 : dt=0.001;
+   40 :
+   41 : cout << "hmax = " << hmax<< ";\n";
+   42 : cout << "hmin = " << hmin<< ";\n";
+   43 :
+   44 :
+   45 : //******************************************
+   46 :
+   47 : fespace Vh(Th,P1);
+   48 : fespace ZVh(Zoom,P1);
+   49 :
+   50 : Vh w,u, v, p = 0, q=0;
+   51 :
+   52 : real area= int2d(Th)(1.);
+ *** Warning  The identifier area hide a Global identifier
+ 
+   53 :
+   54 : real tmax1= 2;
+   55 :
+   56 : int iter;
+   57 :
+   58 : for(t=0;t<tmax1;t+=dt)
+   59 :
+   60 : {
+   61 :
+   62 : iter=iter+1;
+   63 :         Vh uold = u, vold = v, pold=p;
+   64 :         Vh f=convect([u,v],-dt,uold), g=convect([u,v],-dt,vold);
+   65 :
+   66 :         solve pb4u(u,w,solver=LU)
+   67 :         =int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+   68 :         -int2d(Th)((f/dt-dx(p))*w)
+   69 :         + on(1,3,u = V*cos(ang)) + on(2,u = 0);
+   70 :
+   71 :         solve pb4v(v,w,solver=LU)
+   72 :         = int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+   73 :         -int2d(Th)((g/dt-dy(p))*w)
+   74 :         +on(1,3,v =V*sin(ang))+on(2,v=0);
+   75 :
+   76 :         real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+   77 :
+   78 :
+   79 :         solve pb4p(q,w,solver=LU)= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+   80 : //- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+   81 : - int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt);
+   82 :         real meanpq = int2d(Th)(pold - q)/area;
+   83 :
+   84 :         p = pold-q-meanpq;
+   85 :         u = u + dx(q)*dt;
+   86 :         v = v + dy(q)*dt;
+   87 :
+   88 :         ZVh press=p*1.225; // 1.225 es la densidad del aire
+   89 : // press es la presion real, p es la presion de calculo
+   90 :
+   91 :         ZVh Zpres=press;
+   92 :         ZVh Zux=u;
+   93 :         ZVh Zuy=v;
+   94 :
+   95 :         if ( !(iter % 20))
+   96 :         plot([Zux,Zuy],coef=0.4,cmm=" ZOOM vector velocidad en tiempo ="+t, value=1);
+   97 :
+   98 :
+   99 :         TIME+=dt;
+  100 :         cout << " dt = " << dt << " TIME = "<<TIME<<endl;
+  101 :
+  102 : }
+  103 :
+  104 : //******************************************
+  105 :
+  106 :
+  107 : fespace Vh1(Th,P2);
+  108 : Vh1 psii,ww;
+  109 : solve streamlines(psii,ww) =
+  110 :         int2d(Th)( dx(psii)*dx(ww) + dy(psii)*dy(ww))
+  111 :         +int2d(Th)(-ww*(dy(u)-dx(v)))
+  112 :         +on(1,psii=(V*cos(ang))*y-(V*sin(ang))*x)
+  113 :         +on(2,psii=0.);
+  114 :
+  115 :         plot(psii,cmm=" lineas corriente N38 ",wait=1);
+  116 :  sizestack + 1024 =8032  ( 7008 )
+ 
+  --  mesh:  Nb of Triangles =   6308, Nb of Vertices 3274
+  --  mesh:  Nb of Triangles =  13546, Nb of Vertices 6893
+hmax = 0.344377;
+hmin = 0.0115418;
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -40.3827  max 82.0345
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -7.12057  max 14.4649
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 183672  max 913380
+ dt = 0.001 TIME = 0.001
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -1.47663e-29  max 279.553
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -22.9861  max 109.155
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 400687  max 1.09709e+06
+ dt = 0.001 TIME = 0.002
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -43.5711  max 166.566
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -59.5188  max 94.2437
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -22911.9  max 17631.3
+ dt = 0.001 TIME = 0.003
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -29.7315  max 136.337
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -55.9065  max 95.5965
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -1532.69  max 9718.25
+ dt = 0.001 TIME = 0.004
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -10.6373  max 153.919
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -36.8352  max 94.6039
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 563.472  max 4066.58
+ dt = 0.001 TIME = 0.005
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -8.43494  max 125.37
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -20.5203  max 95.1399
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 1489.91  max 4011.65
+ dt = 0.001 TIME = 0.006
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -13.753  max 125.436
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -27.5446  max 96.3313
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -9371.64  max -8304.23
+ dt = 0.001 TIME = 0.007
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -13.9231  max 125.427
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -13.4587  max 96.0399
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 1076.44  max 1834.34
+ dt = 0.001 TIME = 0.008
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -10.6501  max 125.506
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -25.0302  max 95.9202
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -850.551  max -162.95
+ dt = 0.001 TIME = 0.009
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -12.7488  max 124.899
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -12.0498  max 96.4935
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 358.345  max 880.148
+ dt = 0.001 TIME = 0.01
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -6.51156e-30  max 126.57
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -19.1358  max 97.6663
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min 1593.64  max 2065.11
+ dt = 0.001 TIME = 0.011
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -6.47612e-30  max 125.523
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -11.0246  max 98.6516
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+  -- Solve :
+          min -1208.32  max -844.188
+ dt = 0.001 TIME = 0.012
+  SkyLineMatrix: size pL/pU: 6893 712164 712164 moy=103.317
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\12 NAVIER STOKES FLUJO INCOMPRESIBLE\23 a naca012 perfil ala.edp

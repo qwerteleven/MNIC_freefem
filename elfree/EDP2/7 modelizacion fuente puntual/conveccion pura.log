@@ -1,0 +1,22 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\7 modelizacion fuente puntual\conveccion pura.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : border C(t=0, 2*pi) { x=cos(t); y=sin(t); };
+    2 : mesh Th = buildmesh(C(100));
+    3 : fespace Uh(Th,P1);
+    4 : Uh cold, c = exp(-10*((x-0.3)^2 +(y-0.3)^2));
+    5 : real dt = 0.17,t=0;
+    6 : Uh u1 = y, u2 = -x;
+    7 : for (int m=0; m<2*pi/dt ; m++) {
+    8 : t += dt; cold=c;
+    9 : c=convect([u1,u2],-dt,cold);
+   10 : plot(c,cmm=" t="+t + ", min=" + c[].min + ", max=" + c[].max);
+   11 : }
+   12 :  sizestack + 1024 =2888  ( 1864 )
+ 
+  --  mesh:  Nb of Triangles =   1742, Nb of Vertices 922
+times: compile 0.104s, execution 2.352s,  mpirank:0
+ ######## We forget of deleting   1581 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3713,  size :491632 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\7 modelizacion fuente puntual\conveccion pura.edp

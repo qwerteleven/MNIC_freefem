@@ -1,0 +1,87 @@
+/*  
+ clase 20 octubre
+
+APLICACION : TRANSMISION DE CALOR POR CONDUCCION CALOR
+EN UN SOLIDO compuesto de dos materiales, CASO ESTACIONARIO, CONDICIONES CONTORNO DE TEMPERATURA IMPUESTA y de flujo
+
+*/
+
+
+// definimos en primer lugar los contornos del dominio = cuadrado con orificio circular con centro el origen de coordenadas
+
+real pi2=2*pi;
+
+// primera etapa del Metodo de elemntos finitos es definir los contornos de la region o dominio de calculo
+
+border a(t=0,pi2) {x=0.8*cos(t); y=0.8*sin(t);label=1;};  // define una circunferencia de centro el origen y radi R=0.8
+
+// siempre sentido u orientacion contrario a las agujas del reloj, asi border a es del punto de la izda al punto de la derecha
+// es decir del punto (-1,-1) a (1,-1)
+
+
+border i (t=0,pi2) {x=0.5*cos(t); y=0.5*sin(t);label=10;};  
+// define una circunferencia de centro el origen y radio R=0.5 que es lainterfase entre el alumnio y el cobre
+
+border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};  // define una circunferencia de centro el origen y radi R=0.25
+
+int n=80;  // define una variable entera
+
+mesh malla = buildmesh(a(n)+i(n)+e(-4*n));  // el borde a lo divide en n-segmentos donde apoya un lado de triangulos
+
+// signo menos en border e , hace que no pertenezca a la placa solida el interior de la circunferencia, no malla dentro de la circunferencia
+// entonces no hay en esa zona puntos a calcular, no hay triangulos
+
+plot(malla, wait=1); // wait=1 hace parada en la ejecucion hasta teclear enter
+
+
+// P2 = polinomio grado 2 en cada triangulo de la malla se aproxima la temperatura por un polinomio de interpolacion de grado dos
+
+fespace Vh(malla,P2);
+Vh u,v,k;  //  es una variable , la conduct termica, en cada triangulo de la malla (en los dos subdominios)
+
+/*
+
+// u es temperatura en grados Celsius, u(x,y)  es la incognita del problema   , todos son funciones u,v,x,y
+// v es una funcion denominada funcion test del metodo de los elementos finitos (mef), es una funcion auxiliar de calculo
+
+//Conductividad térmica constante, en direcciones x  , y
+kx=2.;  
+ky=8.;// material anisotropo, conduce el calor más rapido en direccion y
+
+*/
+
+
+real k1,k2;    // conductividad del aluminio y del cobre
+
+fespace Ph(malla,P1);
+Ph reg=region;                // a continuacion decimos dos regiones la region vidrio y la region corcho
+
+int aluminio = reg (0.6,0.);  // define una region que es la parte de la puerta que es de ALUMINIO 
+                             //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=0.6 y=0. 
+
+int cobre = reg (0.4,0.);  // define region correspondiente a la parte de COBRE de la puerta
+                             // es la region de puntos (x,y) que tienen igual contorno que el del punto x=0.4  y=0.
+plot (reg,fill=1);
+
+k1=228;         //conductividad termica en el subdominio1    ALUMNINIO  (unidades es Watio/(m º)
+k2=386;		//conductividad termica en EL subdominio2    COBRE 
+
+k = k1*(region==aluminio)+k2*(region==cobre);
+
+problem calor(u,v) = int2d(malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))+int1d(malla,1)(2*v)+on(2,u=50); // es una sola linea de programa
+
+// 1 se corresponde a contorno con label =1, idem label=2 que es la circunferencia definida en border e
+// define el probema que le llamamos calor
+// 
+
+calor;   // aqui resuelve sistema algebraico final del m.e.f donde finalmente obtiene u en los nodos del triaangulo
+plot(u, value=1,wait=1); // value = 1 hace que ponga la barra de correspondencia de temperatura y colores asignados
+
+// sigmax flujo de calor en direccion x
+// sigmay flujo de calor en direccion y
+
+Vh sigmax=- k*dx(u); // flujo de calor en direcc x  (ver pdf fundamentos su expresion matematica)
+Vh sigmay= -k*dy(u);
+
+plot([sigmax,sigmay]); // plotea el vector flujo
+

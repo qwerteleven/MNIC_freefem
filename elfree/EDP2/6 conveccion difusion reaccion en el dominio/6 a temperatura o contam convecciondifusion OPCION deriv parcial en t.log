@@ -1,0 +1,283 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\6 a temperatura o contam conveücciondifusion OPCION deriv parcial en t.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
+    2 :
+    3 : aqui el vector velocidad es dato, luego consideramos teoria y aplicaciones con ecuaciones de Navier Stokes para
+ücalculo de velocidades */
+    4 :
+    5 : int n=50;
+    6 : int i=0;
+    7 :
+    8 : border a(t=0,1) {x=t;y=0;label=1;}
+    9 : border b(t=0,1) {x=1.;y=t;label=2;}
+   10 : border c(t=1,0) {x=t; y=1 ;label=3;}
+   11 : border d(t=1,0) {x=0.;y=t;label=4;}
+   12 :
+   13 : mesh Th = buildmesh(a(n)+b(n)+c(n)+d(n));
+   14 : plot (Th, wait=1);
+   15 :
+   16 : real Cv=1000.;
+   17 :
+   18 : real dt=0.001,t=0;
+   19 : real alpha=1/dt;
+   20 :
+   21 : fespace Vh(Th,P2);
+   22 : Vh T,v,u1,u2,Toldt;
+   23 :
+   24 : u1=Cv*(y-0.5)*(x-x*x);
+   25 : u2=Cv*(0.5-x)*(y-y*y);
+   26 : plot([u1,u2],wait=1);
+   27 :
+   28 : problem convecdif (T,v)=
+   29 :
+   30 : int2d (Th)  ( T*v/dt)  - int2d(Th)(Toldt*v/dt) // derivada parcial resp tiempo
+   31 :
+   32 : +int2d(Th) (u1*dx(T)*v+u2*dy(T)*v) // termino nuevo de conveccion
+   33 :
+   34 : +int2d (Th) ( dx(T)*dx(v)+dy(T)*dy(v) ) // metodo de Euler en estos terminos difusivos
+   35 :
+   36 :  + on (4,T=0)
+   37 :  + on (2,T=1);
+   38 :
+   39 :
+   40 : for (int m=0;m<250;m++)
+   41 : {
+   42 : t += dt;
+   43 : Toldt=T;
+   44 : convecdif;
+   45 :
+   46 : if ( !(m % 10)) //cada multiplo de 10 imprime el plot de la linea siguiente
+   47 : plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1);
+   48 :
+   49 :
+   50 : }
+   51 :
+   52 :  sizestack + 1024 =4168  ( 3144 )
+ 
+  --  mesh:  Nb of Triangles =   5938, Nb of Vertices 3070
+  -- Solve :
+          min 7.10228e-42  max 1
+  -- Solve :
+          min 1.22428e-40  max 1
+  -- Solve :
+          min 1.072e-39  max 1
+  -- Solve :
+          min 6.35842e-39  max 1
+  -- Solve :
+          min 2.8746e-38  max 1
+  -- Solve :
+          min 1.0568e-37  max 1
+  -- Solve :
+          min 3.29162e-37  max 1
+  -- Solve :
+          min 8.93634e-37  max 1
+  -- Solve :
+          min 2.15923e-36  max 1
+  -- Solve :
+          min 4.71823e-36  max 1
+  -- Solve :
+          min 9.44301e-36  max 1
+  -- Solve :
+          min 1.74898e-35  max 1
+  -- Solve :
+          min 3.0237e-35  max 1
+  -- Solve :
+          min 4.91527e-35  max 1
+  -- Solve :
+          min 7.56032e-35  max 1
+  -- Solve :
+          min 1.10638e-34  max 1
+  -- Solve :
+          min 1.54794e-34  max 1
+  -- Solve :
+          min 2.07956e-34  max 1
+  -- Solve :
+          min 2.69315e-34  max 1
+  -- Solve :
+          min 3.37421e-34  max 1
+  -- Solve :
+          min 4.10325e-34  max 1
+  -- Solve :
+          min 4.85777e-34  max 1
+  -- Solve :
+          min 5.61454e-34  max 1
+  -- Solve :
+          min 6.35169e-34  max 1
+  -- Solve :
+          min 7.05039e-34  max 1
+  -- Solve :
+          min 7.696e-34  max 1
+  -- Solve :
+          min 8.27857e-34  max 1
+  -- Solve :
+          min 8.79282e-34  max 1
+  -- Solve :
+          min 9.23765e-34  max 1
+  -- Solve :
+          min 9.61543e-34  max 1
+  -- Solve :
+          min 9.93111e-34  max 1
+  -- Solve :
+          min 1.01914e-33  max 1
+  -- Solve :
+          min 1.04039e-33  max 1
+  -- Solve :
+          min 1.05767e-33  max 1
+  -- Solve :
+          min 1.07176e-33  max 1
+  -- Solve :
+          min 1.08338e-33  max 1
+  -- Solve :
+          min 1.09322e-33  max 1
+  -- Solve :
+          min 1.10184e-33  max 1
+  -- Solve :
+          min 1.10976e-33  max 1
+  -- Solve :
+          min 1.11738e-33  max 1
+  -- Solve :
+          min 1.12506e-33  max 1
+  -- Solve :
+          min 1.13305e-33  max 1
+  -- Solve :
+          min 1.14156e-33  max 1
+  -- Solve :
+          min 1.15072e-33  max 1
+  -- Solve :
+          min 1.1606e-33  max 1
+  -- Solve :
+          min 1.17125e-33  max 1
+  -- Solve :
+          min 1.18263e-33  max 1
+  -- Solve :
+          min 1.19469e-33  max 1
+  -- Solve :
+          min 1.20735e-33  max 1
+  -- Solve :
+          min 1.2205e-33  max 1
+  -- Solve :
+          min 1.23399e-33  max 1
+  -- Solve :
+          min 1.24769e-33  max 1
+  -- Solve :
+          min 1.26146e-33  max 1
+  -- Solve :
+          min 1.27516e-33  max 1
+  -- Solve :
+          min 1.28864e-33  max 1
+  -- Solve :
+          min 1.3018e-33  max 1
+  -- Solve :
+          min 1.31453e-33  max 1
+  -- Solve :
+          min 1.32676e-33  max 1
+  -- Solve :
+          min 1.33842e-33  max 1
+  -- Solve :
+          min 1.34949e-33  max 1
+  -- Solve :
+          min 1.35995e-33  max 1
+  -- Solve :
+          min 1.3698e-33  max 1
+  -- Solve :
+          min 1.37908e-33  max 1
+  -- Solve :
+          min 1.38781e-33  max 1
+  -- Solve :
+          min 1.39605e-33  max 1
+  -- Solve :
+          min 1.40385e-33  max 1
+  -- Solve :
+          min 1.41128e-33  max 1
+  -- Solve :
+          min 1.4184e-33  max 1
+  -- Solve :
+          min 1.42526e-33  max 1
+  -- Solve :
+          min 1.43193e-33  max 1
+  -- Solve :
+          min 1.43846e-33  max 1
+  -- Solve :
+          min 1.44489e-33  max 1
+  -- Solve :
+          min 1.45126e-33  max 1
+  -- Solve :
+          min 1.4576e-33  max 1
+  -- Solve :
+          min 1.46394e-33  max 1
+  -- Solve :
+          min 1.47028e-33  max 1
+  -- Solve :
+          min 1.47664e-33  max 1
+  -- Solve :
+          min 1.48301e-33  max 1
+  -- Solve :
+          min 1.48939e-33  max 1
+  -- Solve :
+          min 1.49576e-33  max 1
+  -- Solve :
+          min 1.50212e-33  max 1
+  -- Solve :
+          min 1.50845e-33  max 1
+  -- Solve :
+          min 1.51473e-33  max 1
+  -- Solve :
+          min 1.52094e-33  max 1
+  -- Solve :
+          min 1.52707e-33  max 1
+  -- Solve :
+          min 1.53311e-33  max 1
+  -- Solve :
+          min 1.53904e-33  max 1
+  -- Solve :
+          min 1.54484e-33  max 1
+  -- Solve :
+          min 1.55052e-33  max 1
+  -- Solve :
+          min 1.55607e-33  max 1
+  -- Solve :
+          min 1.56147e-33  max 1
+  -- Solve :
+          min 1.56674e-33  max 1
+  -- Solve :
+          min 1.57187e-33  max 1
+  -- Solve :
+          min 1.57687e-33  max 1
+  -- Solve :
+          min 1.58174e-33  max 1
+  -- Solve :
+          min 1.58649e-33  max 1
+  -- Solve :
+          min 1.59113e-33  max 1
+  -- Solve :
+          min 1.59566e-33  max 1
+  -- Solve :
+          min 1.6001e-33  max 1
+  -- Solve :
+          min 1.60445e-33  max 1
+  -- Solve :
+          min 1.60872e-33  max 1
+  -- Solve :
+          min 1.61292e-33  max 1
+  -- Solve :
+          min 1.61705e-33  max 1
+  -- Solve :
+          min 1.62112e-33  max 1
+  -- Solve :
+          min 1.62514e-33  max 1
+  -- Solve :
+          min 1.6291e-33  max 1
+  -- Solve :
+          min 1.63301e-33  max 1
+  -- Solve :
+          min 1.63687e-33  max 1
+  -- Solve :
+          min 1.64068e-33  max 1
+  -- Solve :
+          min 1.64444e-33  max 1
+  -- Solve :
+          min 1.64816e-33  max 1
+  -- Solve :
+          min 1.65183e-33  max 1
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\6 a temperatura o contamü convecciondifusion OPCION deriv parcial en t.edp

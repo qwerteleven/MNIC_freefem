@@ -1,0 +1,137 @@
+/* AIRFLOW AROUND BUILDINGS solving Navier Stokes equations
+ 
+first we must obtain wind profile 
+(variation of the wind with altitude ,in the turbulent layer on the ground) 
+
+to use this information to use as inlet velocity 
+running Chorin algorithm, VERSION IMPROVED
+
+Data here to obtain wind profile are  
+	SOLAR RADIATION 0 w/m2  (night time) 
+	Wind at 10 meter on the ground, terrain = 4,0 m/s 
+
+DATOS : RUGOSIDAD Zo = 4
+        fracc nubes = 0
+
+then running with matlab the file perfil_viento.m we obtain 
+	 u* = u friction= friction velocity = 1.0539 
+       L = -704.9502 Monin-Obukhov length
+
+k = 0.41  Von Karman constant, sometimes is used 0.4
+
+ u ( z ) = (ufriction/k)*(log(z/z0)+(4.7/L)*(z-z0))
+
+Pasquill stability class : "Atmósfera ligeramente estable"
+
+Longitud de Monin-Obukhov:
+
+L = 1/(a + b*log10(z0))
+L = 1/(0.0040-0.0180*log10(2.000000))
+L = -704.950199  Monin-Obukhov length
+
+*/
+
+real L = -704.9502; // Monin-Obukhov length
+real ufriction= 1.0539;
+
+real zo= 2; // roughness height , data
+
+ 
+border a(t=-20,10){ x=t; y=2; label=2;}  
+ 
+/* it is right to choise lower level of the simulation 
+at vertical = y= zo */
+
+border b(t=2,10){ x=10; y=t; label=2;} 
+border c(t=10,30){ x=t; y=10; label=2;} 
+border d(t=10,2){ x=30; y=t; label=2;}  
+border e(t=30,50){ x=t; y=2; label=2;}  
+
+// second facade 
+border f(t=2,5) { x=50; y=t; label=2;} 
+border g(t=50,70){ x=t; y=5; label=2;}  
+border h(t=5,2){ x=70; y=t; label=2;}
+
+border k(t=70,120) { x=t; y=2; label=2;}
+border l(t=2,40) { x=120; y=t; label=3;}  // outlet air
+border m(t=120,-20) {x=t; y=40; label=5;}  // capa mas alta de la atmosfera en la simulacion
+
+border r(t=40,2) {x=-20; y=t; label=1;}     // inlet air 
+ 
+
+int n=20;
+mesh Th= buildmesh(a(n)+b(n)+c(n*3)+d(n)+e(4*n)+f(n*3)+g(n*3)+h(n*3)+k(4*n)+ l(n)+ m(4*n)+ r(4*n)) ;
+
+plot(Th,wait=1);
+
+
+// aprox tmax = 140 / 6 = 23 seconds  
+
+real tmax=20; 
+
+real nu = 0.000016; // air cinematic viscosity  m2/s for 30 ºC, 
+					
+real dt = 0.02;
+
+real t;  
+int iter;
+iter=0;
+
+/*
+
+Chorin algorithm improved  to solve Navier Stokes  
+
+***********************************************************  */
+
+fespace Vh(Th,P1);
+Vh w,u, v =0, p = 0, q=0;
+real area= int2d(Th)(1.);
+
+
+for(t=0;t<tmax;t+=dt)
+{
+	iter=iter+1;
+	Vh uold = u, vold = v, pold=p;
+	Vh f=convect([uold,vold],-dt,uold), g=convect([uold,vold],-dt,vold);
+
+	solve pb4u(u,w,init=n,solver=LU)
+	= int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+	- int2d(Th)((f/dt-dx(p))*w)
+	+ on(1,u = (ufriction/.41)*log(y/zo)+(4.7*(y-zo)/L))+
+        on(2,u = 0)+ on(5,u = 6.481)+on(3,u=f);   
+// la velocidad en la capa superior es informacion obtenida con calculo en subrutina de matlab
+	
+
+	solve pb4v(v,w,init=n,solver=LU)
+	= int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+	- int2d(Th)((g/dt-dy(p))*w)
+	+ on(1,2,5,v = 0)
+	+on(3,v=g);
+
+	real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+
+	solve pb4p(q,w,init=n,solver=LU)
+	= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w))
+	- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+	
+	real meanpq = int2d(Th)(pold - q)/area;
+
+	if(iter%10)// plotea cada 10 iteraciones
+
+	plot([u,v],cmm=" tiempo ="+t,value=1);
+	p = pold-q-meanpq;
+	u = u + dx(q)*dt;
+	v = v + dy(q)*dt;
+
+if (iter == 4) {
+ Th = adaptmesh(Th,u,v,q,err=0.001,hmax=0.5 ,hmin=0.1,cutoff=1e-6,ratio=1.6,nbvx=18000,splitpbedge=2,power=1,abserror=true,nomeshgeneration=false,anisomax=1);
+
+plot(Th,wait=1);
+}
+		
+}
+
+// ************* end of Chorin algorithm************************
+
+
+

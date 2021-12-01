@@ -1,0 +1,200 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : int n=40;
+    2 :
+    3 : real t, T=1., dt=0.01;
+    4 :
+    5 : real h,ufluid;
+    6 : h=80;
+    7 : ufluid=50;
+    8 :
+    9 : real pi2=2*pi;
+   10 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
+   11 :
+   12 : border aa (t=1,-1) {x=t;y=1;label=3;};
+   13 : border bb (t=1,-1) {x=-1;y=t;label=3;};
+   14 : border cc (t=-1,1) {x=t;y=-1;label=3;};
+   15 : border dd (t=-1,1) {x=1;y=t;label=3;};
+   16 :
+   17 : mesh malla = buildmesh(aa(n)+bb(n)+cc(n)+dd(n)+e(-2*n));
+   18 :
+   19 : real kx,ky,den,cap,a;
+   20 : den=1;cap=1;
+   21 :
+   22 : // VALORES DE den cap  QUEHACEN CONVERJER RAPIDAMENTE A LA SOLUCION ESTACIONARIA
+   23 : a=den*cap;
+   24 : kx=1.0;
+   25 : ky=1.0;
+   26 :
+   27 : fespace Vh(malla,P2);
+   28 : Vh uoldt,u,uu,v,diferencia;
+   29 :
+   30 : // u es la incognita, v es la funcion test y oldU es la solucion en
+   31 : // el instante anterior
+   32 : // si no decimos nada el primer valor sera cero, pues todas las variables
+   33 : // automaticamente al definirse son puestas todas a cero
+   34 :
+   35 :
+   36 : problem calor (u,v) =
+   37 : int2d (malla)  (a*u*v/dt ) - int2d(malla) (a*uoldt*v/dt)+
+   38 : int2d (malla)(kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
+   39 : + int1d(malla,2)(h*u*v)
+   40 : -int1d(malla,2)(h*ufluid*v)
+   41 : + on (3,u=20);
+   42 :
+   43 : uoldt=20;
+   44 :
+   45 :
+   46 : // propuesta: bucle de tiempo pare con critrerio cuando un error evaluado como int2d(malla) sea menor que una TOL
+   47 :
+   48 : real EL2 = 1.;
+   49 : real EH1 = 1.;
+   50 :
+   51 : while(sqrt(EL2+EH1) > 1.e-3)    // iteraciones de tiempo
+   52 :
+   53 : {
+   54 :         t=t+dt;
+   55 :
+   56 :         calor;
+   57 :
+   58 :         diferencia=u-uoldt;  // diferencia de temperatura u (x,y) y temperatura uoldt(x,y)
+   59 :
+   60 :         EH1 = int2d(malla)(dx(diferencia)^2+dy(diferencia)^2);
+   61 :         EL2 = int2d(malla)(diferencia^2);
+   62 :
+   63 :         cout << " Eseminorma H1 = " <<sqrt( EH1) <<endl;
+   64 :         cout << " EL2 = " << sqrt(EL2) <<endl;
+   65 :         cout << " EH1 = " << sqrt(EL2+EH1) <<endl;
+   66 :
+   67 :
+   68 :   uoldt=u;
+   69 :
+   70 : plot(uoldt, cmm=" tiempo ="+t, nbiso=30,value=1);
+   71 :
+   72 :
+   73 :
+   74 : x=0.7;
+   75 : y=0.7;
+   76 : uu=u(x,y); // temperatura en punto (x,y)
+   77 : cout << " u = " <<uu<<endl; // plotea en pantalla
+   78 :
+   79 :
+   80 : }
+   81 :
+   82 :
+   83 :
+   84 :
+   85 : Vh qx=- kx*dx(u);
+   86 : Vh qy= -ky*dy(u);
+   87 : // qx flujo de calor en direccion x
+   88 : // qy flujo de calor en direccion y
+   89 : plot([qx,qy],wait=1,fill=1);
+   90 :  sizestack + 1024 =4448  ( 3424 )
+ 
+  --  mesh:  Nb of Triangles =   6276, Nb of Vertices 3258
+  -- Solve :
+          min 20  max 46.1472
+ Eseminorma H1 = 85.3461
+ EL2 = 7.36274
+ EH1 = 85.6631
+ u = 20.0082
+  -- Solve :
+          min 20  max 47.5791
+ Eseminorma H1 = 23.4564
+ EL2 = 2.94553
+ EH1 = 23.6406
+ u = 20.0387
+  -- Solve :
+          min 20  max 48.0223
+ Eseminorma H1 = 11.6584
+ EL2 = 1.97737
+ EH1 = 11.8249
+ u = 20.1031
+  -- Solve :
+          min 20  max 48.2515
+ Eseminorma H1 = 7.44918
+ EL2 = 1.52854
+ EH1 = 7.60439
+ u = 20.2052
+  -- Solve :
+          min 20  max 48.3972
+ Eseminorma H1 = 5.41605
+ EL2 = 1.25755
+ EH1 = 5.56013
+ u = 20.3415
+  -- Solve :
+          min 20  max 48.5005
+ Eseminorma H1 = 4.25177
+ EL2 = 1.06844
+ EH1 = 4.38396
+ u = 20.504
+  -- Solve :
+          min 20  max 48.5787
+ Eseminorma H1 = 3.50123
+ EL2 = 0.923939
+ EH1 = 3.62108
+ u = 20.6833
+  -- Solve :
+          min 20  max 48.6404
+ Eseminorma H1 = 2.96951
+ EL2 = 0.806979
+ EH1 = 3.07721
+ u = 20.8708
+  -- Solve :
+          min 20  max 48.6907
+ Eseminorma H1 = 2.5638
+ EL2 = 0.708876
+ EH1 = 2.66
+ u = 21.0591
+  -- Solve :
+          min 20  max 48.7326
+ Eseminorma H1 = 2.23705
+ EL2 = 0.62479
+ EH1 = 2.32266
+ u = 21.243
+  -- Solve :
+          min 20  max 48.768
+ Eseminorma H1 = 1.96415
+ EL2 = 0.551775
+ EH1 = 2.04018
+ u = 21.4185
+  -- Solve :
+          min 20  max 48.7982
+ Eseminorma H1 = 1.73089
+ EL2 = 0.487877
+ EH1 = 1.79833
+ u = 21.5834
+  -- Solve :
+          min 20  max 48.8243
+ Eseminorma H1 = 1.52865
+ EL2 = 0.431694
+ EH1 = 1.58844
+ u = 21.7363
+  -- Solve :
+          min 20  max 48.8469
+ Eseminorma H1 = 1.35179
+ EL2 = 0.382153
+ EH1 = 1.40477
+ u = 21.8767
+  -- Solve :
+          min 20  max 48.8667
+ Eseminorma H1 = 1.1963
+ EL2 = 0.338392
+ EH1 = 1.24324
+ u = 22.0046
+  -- Solve :
+          min 20  max 48.884
+ Eseminorma H1 = 1.05919
+ EL2 = 0.299695
+ EH1 = 1.10077
+ u = 22.1206
+  -- Solve :
+          min 20  max 48.8992
+ Eseminorma H1 = 0.938042
+ EL2 = 0.265452
+ EH1 = 0.974878
+ u = 22.2252
+  -- Solve :
+          min 20  max 48.9125
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp

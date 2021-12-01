@@ -1,0 +1,82 @@
+border a0(t=1,0){ x=0; y=t; label=1;}   //contorno de entrada del fluido
+border a1(t=0,2){ x=t; y=0; label=2;}
+border a2(t=0,-0.5){ x=2; y=t; label=2;}
+
+border a3(t=2,20){ x=t; y=-0.5; label=2;}
+
+border a4(t=-0.5,1){ x=20; y=t; label=3;}   //contorno de salida del fluido
+
+border a5(t=1,0){ x=20*t; y=1; label=4;}
+
+// en las paredes solidas se impone que la velocidad es nula (todas las componentes del vector velocidad, aqui 2D son u,v)
+int n=1;
+mesh Th= buildmesh(a0(3*n)+a1(20*n)+a2(10*n)+a3(150*n)+a4(5*n)+a5(100*n));
+
+/* se recomienda mallar con nro de vertices superior a 8000 nodos, en aplicaciones para capturar bien los remolinos
+ 
+el mallado debe ser en teoria , tal que el tamaño de los triangulos (lado mayor de un traiangulo) sean del orden de cm incluso 
+recomendable del orden de milimetros, pero muy alto coste computacional, a veces dos o tres millones de triangulos en aplicaciones industriales */
+
+plot(Th,wait=1);
+
+fespace Vh(Th,P1); // EL METODO QUE USAMOS TIENE LA VENTAJA QUE PODEMOS UTILIZAR P1 TANTO PARA LA VELOCIDAD COMO LA PRESIÓN
+
+real nu = 0.000016; 
+
+// nu es la viscosidad cinematica del fluido, aquí la del aire a 30 ºC 
+
+
+Vh w,u = 0, v =0, p = 0, q=0;
+
+real area= int2d(Th)(1.);  // el metodo usa el area del dominio
+
+int iter=0;
+
+
+/* tiempo de simulacion debemos fijarlo sobre 5 s porque L=20m   Vmax es aproximadamente = 4.5 m/s     
+(la entrada es 4 m/s pero el vórtice acelera localmente)       
+*/
+
+real t, tmax=5;
+real dt=0.01; // entre 0.01   y 0.005
+
+for(t=0;t<tmax;t+=dt)
+{
+	iter=iter+1;
+
+Vh uold = u, vold = v, pold=p;
+Vh f=convect([u,v],-dt,uold), g=convect([u,v],-dt,vold);
+
+
+
+solve pb4u(u,w,init=n,solver=LU)   // CALCULA LA COMPONENTE u del vector velocidad
+=int2d(Th)(u*w/dt +nu*(dx(u)*dx(w)+dy(u)*dy(w)))
+-int2d(Th)((f/dt-dx(p))*w)
+
++ on(1,u = 4) + on(2,4,u = 0)+ 
+on(3,u=f);    // siempre en este metodo en el borde de salida que etiquetaremos siempre con label 3  
+
+
+solve pb4v(v,w,init=n,solver=LU)  // CALCULA LA COMPONENTE v del vector velocidad
+= int2d(Th)(v*w/dt +nu*(dx(v)*dx(w)+dy(v)*dy(w)))
+-int2d(Th)((g/dt-dy(p))*w)
+
++on(1,2,4,v = 0)
++on(3,v=g);   // siempre en este metodo en el borde de salida que etiquetaremos siempre con label 3
+
+real meandiv = int2d(Th)(dx(u)+dy(v))/area;
+
+solve pb4p(q,w,init=n,solver=LU)= int2d(Th)(dx(q)*dx(w)+dy(q)*dy(w)) // CALCULA la presion
+- int2d(Th)((dx(u)+ dy(v)-meandiv)*w/dt)+ on(3,q=0);
+
+real meanpq = int2d(Th)(pold - q)/area;
+
+p = pold-q-meanpq;  	// presion
+u = u + dx(q)*dt;   	// u componente en ejex del vector velocidad
+v = v + dy(q)*dt;  	// v componente en ejex del vector velocidad
+
+if ( !(iter % 20)) //cada multiplo de 20 imprime el plot de la linea siguiente
+plot([u,v],value=1);
+
+}
+  
