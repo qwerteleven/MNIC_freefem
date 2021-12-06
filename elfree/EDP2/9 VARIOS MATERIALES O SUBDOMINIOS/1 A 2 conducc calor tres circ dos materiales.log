@@ -1,44 +1,44 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\1 A 2 conducc calor tres circ dos materiales.edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\1 A 2 conduccԪ calor tres circ dos materiales.edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : /*
     2 :  clase 20 octubre
     3 :
     4 : APLICACION : TRANSMISION DE CALOR POR CONDUCCION CALOR
-    5 : EN UN SOLIDO compuesto de dos materiales, CASO ESTACIONARIO, CONDICIONES CONTORNO DE TEMPERATURA IMPUESTA y de flujo
+    5 : EN UN SOLIDO compuesto de dos materiales, CASO ESTACIONARIO, CONDICIONES CONTORNO DE TEMPERATURA IMPUESTA y de fԪlujo
     6 :
     7 : */
     8 :
     9 :
    10 : // definimos en primer lugar los contornos del dominio = cuadrado con orificio circular con centro el origen de
-coordenadas
+Ԫcoordenadas
    11 :
    12 : real pi2=2*pi;
    13 :
    14 : // primera etapa del Metodo de elemntos finitos es definir los contornos de la region o dominio de calculo
    15 :
-   16 : border a(t=0,pi2) {x=0.8*cos(t); y=0.8*sin(t);label=1;};  // define una circunferencia de centro el origen y radi R=0.8
+   16 : border a(t=0,pi2) {x=0.8*cos(t); y=0.8*sin(t);label=1;};  // define una circunferencia de centro el origen y radԪi R=0.8
    17 :
-   18 : // siempre sentido u orientacion contrario a las agujas del reloj, asi border a es del punto de la izda al punto de la derecha
+   18 : // siempre sentido u orientacion contrario a las agujas del reloj, asi border a es del punto de la izda al puntoԪ de la derecha
    19 : // es decir del punto (-1,-1) a (1,-1)
    20 :
    21 :
    22 : border i (t=0,pi2) {x=0.5*cos(t); y=0.5*sin(t);label=10;};
    23 : // define una circunferencia de centro el origen y radio R=0.5 que es lainterfase entre el alumnio y el cobre
    24 :
-   25 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};  // define una circunferencia de centro el origen y radi R=0.25
+   25 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};  // define una circunferencia de centro el origen y rԪadi R=0.25
    26 :
    27 : int n=80;  // define una variable entera
    28 :
-   29 : mesh malla = buildmesh(a(n)+i(n)+e(-4*n));  // el borde a lo divide en n-segmentos donde apoya un lado de triangulos
+   29 : mesh malla = buildmesh(a(n)+i(n)+e(-4*n));  // el borde a lo divide en n-segmentos donde apoya un lado de triangԪulos
    30 :
-   31 : // signo menos en border e , hace que no pertenezca a la placa solida el interior de la circunferencia, no malla dentro de la circunferencia
+   31 : // signo menos en border e , hace que no pertenezca a la placa solida el interior de la circunferencia, no mallaԪ dentro de la circunferencia
    32 : // entonces no hay en esa zona puntos a calcular, no hay triangulos
    33 :
    34 : plot(malla, wait=1); // wait=1 hace parada en la ejecucion hasta teclear enter
    35 :
    36 :
-   37 : // P2 = polinomio grado 2 en cada triangulo de la malla se aproxima la temperatura por un polinomio de interpolacion de grado dos
+   37 : // P2 = polinomio grado 2 en cada triangulo de la malla se aproxima la temperatura por un polinomio de interpolaԪcion de grado dos
    38 :
    39 : fespace Vh(malla,P2);
    40 : Vh u,v,k;  //  es una variable , la conduct termica, en cada triangulo de la malla (en los dos subdominios)
@@ -46,7 +46,7 @@
    42 : /*
    43 :
    44 : // u es temperatura en grados Celsius, u(x,y)  es la incognita del problema   , todos son funciones u,v,x,y
-   45 : // v es una funcion denominada funcion test del metodo de los elementos finitos (mef), es una funcion auxiliar de calculo
+   45 : // v es una funcion denominada funcion test del metodo de los elementos finitos (mef), es una funcion auxiliar dԪe calculo
    46 :
    47 : //Conductividad t�rmica constante, en direcciones x  , y
    48 : kx=2.;
@@ -61,10 +61,10 @@
    57 : Ph reg=region;                // a continuacion decimos dos regiones la region vidrio y la region corcho
    58 :
    59 : int aluminio = reg (0.6,0.);  // define una region que es la parte de la puerta que es de ALUMINIO
-   60 :                              //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=0.6 y=0.
+   60 :                              //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=0.Ԫ6 y=0.
    61 :
    62 : int cobre = reg (0.4,0.);  // define region correspondiente a la parte de COBRE de la puerta
-   63 :                              // es la region de puntos (x,y) que tienen igual contorno que el del punto x=0.4  y=0.
+   63 :                              // es la region de puntos (x,y) que tienen igual contorno que el del punto x=0.4  yԪ=0.
    64 : plot (reg,fill=1);
    65 :
    66 : k1=228;         //conductividad termica en el subdominio1    ALUMNINIO  (unidades es Watio/(m �)
@@ -72,14 +72,14 @@
    68 :
    69 : k = k1*(region==aluminio)+k2*(region==cobre);
    70 :
-   71 : problem calor(u,v) = int2d(malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))+int1d(malla,1)(2*v)+on(2,u=50); // es una sola linea de programa
+   71 : problem calor(u,v) = int2d(malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))+int1d(malla,1)(2*v)+on(2,u=50); // es una sola lԪinea de programa
    72 :
    73 : // 1 se corresponde a contorno con label =1, idem label=2 que es la circunferencia definida en border e
    74 : // define el probema que le llamamos calor
    75 : //
    76 :
-   77 : calor;   // aqui resuelve sistema algebraico final del m.e.f donde finalmente obtiene u en los nodos del triaangulo
-   78 : plot(u, value=1,wait=1); // value = 1 hace que ponga la barra de correspondencia de temperatura y colores asignados
+   77 : calor;   // aqui resuelve sistema algebraico final del m.e.f donde finalmente obtiene u en los nodos del triaangԪulo
+   78 : plot(u, value=1,wait=1); // value = 1 hace que ponga la barra de correspondencia de temperatura y colores asignaԪdos
    79 :
    80 : // sigmax flujo de calor en direccion x
    81 : // sigmay flujo de calor en direccion y
@@ -94,8 +94,8 @@
   --  mesh:  Nb of Triangles =   6696, Nb of Vertices 3548
   -- Solve :
           min 49.9938  max 50
-times: compile 0.356s, execution 2.959s,  mpirank:0
+times: compile 1.661s, execution 6.048s,  mpirank:0
  ######## We forget of deleting   55 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
  CodeAlloc : nb ptr  3829,  size :499264 mpirank: 0
 Ok: Normal End
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\1 A 2 conducc calor tres circ dos materiales.edp
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\1 A 2 cԪonducc calor tres circ dos materiales.edp

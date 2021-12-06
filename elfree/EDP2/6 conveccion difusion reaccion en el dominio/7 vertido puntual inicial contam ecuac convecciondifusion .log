@@ -1,5 +1,6 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7 vertido puntual inicial contam ecuac convecciondifusion .edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7
+vertido puntual inicial contam ecuac convecciondifusion .edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA
     2 :
@@ -95,7 +96,7 @@ de Navier-Stokes
    89 :
    90 : }
    91 :
-   92 :  sizestack + 1024 =7416  ( 6392 )
+   92 :  sizestack + 1024 =7336  ( 6312 )
  
   --  mesh:  Nb of Triangles =   5938, Nb of Vertices 3070
   --  mesh:  Nb of Triangles =    166, Nb of Vertices 99
@@ -169,4 +170,16 @@ de Navier-Stokes
           min -0.000747554  max 1
   -- Solve :
           min -0.000729859  max 1
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7 vertido puntual inicial contam ecuac convecciondifusion .edp
+  -- Solve :
+          min -0.000712597  max 1
+  -- Solve :
+          min -0.00069581  max 1
+  -- Solve :
+          min -0.00067954  max 1
+  -- Solve :
+          min -0.000663823  max 1
+  -- Solve :
+          min -0.00064869  max 1
+  -- Solve :
+          min -0.000634168  max 1
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\6 conveccion difusion reaccion en el dominio\7 vertido puntual inicial contam ecuac convecciondifusion .edp

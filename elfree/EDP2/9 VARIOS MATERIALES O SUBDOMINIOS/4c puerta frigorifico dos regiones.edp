@@ -5,7 +5,7 @@
 
 // CORCHO DANDO AL INTERIOR DE UN CONGELADOR con espesor o longitud 8 cm Y VIDRIO DANDO AL EXTERIOR con espesor 12 cm
 
-// CONSIDERAMOS TEMPERATURA FIJA EN BORDE INTERIOR A -20 º C y AMBIEN EN BORDE EXTERIOR TEMPERATURA CTE A 25 ºC
+// CONSIDERAMOS TEMPERATURA FIJA EN BORDE INTERIOR A -20 ï¿½ C y AMBIEN EN BORDE EXTERIOR TEMPERATURA CTE A 25 ï¿½C
 
 // PARA QUE LOS RESULTADOS SEAN IGUALES QUE CALCULOS EN 1D CONSIDERAMOS en LOS CONTORNOS HORIZONTALES EN ALTURA h= 0
 // y H= altura de la puerta , que en ambos contornos el flujo es nulo
@@ -40,7 +40,7 @@ int corcho = reg (4.0,0.5);  // define region correspondiente a la parte de CORC
 plot (reg,fill=1);
 
 real k1,k2;
-k1=0.008;         //conductividad termica en el subdominio1     VIDRIO  (unidades es Watio/(cm ºC)
+k1=0.008;         //conductividad termica en el subdominio1     VIDRIO  (unidades es Watio/(cm ï¿½C)
 k2=0.0004;		//conductividad termica en subdominio2  CORCHO 
 
 

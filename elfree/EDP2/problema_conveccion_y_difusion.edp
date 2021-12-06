@@ -1,0 +1,203 @@
+
+
+/* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA  */
+
+real dt=0.01, t=0; // paso de tiempo
+
+int n=100;
+
+
+// definicion de contornos
+border a(t=20,0) {x=-12;y=t;label=1;}
+border b(t=-12,0) {x=t;y=0;label=2;}
+border c(t=0,20) {x=t; y=t ;label=4;}
+border d(t=20,-12) {x=t;y=20;label=3;}
+
+//definicion de malla
+mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+plot(malla, wait=1); 
+
+
+real alpha=1/dt;
+
+fespace Vh(malla, P1);
+Vh T,v,u1,u2,k,Toldt;
+
+
+// T es la incognita u
+// r es la constante del termino de reaccion
+
+real r=0.2;
+
+// velocidad
+u1=10; // Wx
+u2=10; // Wy
+
+k=5;
+Toldt=100;
+plot([u1, u2], wait=1);  // vista de los vectores de velocidad
+
+
+
+
+
+//**************** adaptacion de malla ***************
+for (int i = 0 ; i < 2; i++) {
+    
+    malla = adaptmesh(malla, T, v, err=0.0001, hmax=0.1,
+     hmin=0.01, cutoff=1e-6, ratio=1.6, nbvx=60000, splitpbedge=2,
+     power=1, abserror=true, nomeshgeneration=false, anisomax=1);
+
+    fespace Vh0(malla, P0);
+    Vh0 h=hTriangle;
+    real hmax=h[].max;
+    real hmin=h[].min;
+
+    cout << "hmax: " << hmax << "\n";
+    cout << "hmin: " << hmin << "\n";
+
+    plot(malla, wait=1); 
+}
+
+
+
+
+
+//********************** fuentes puntuales **************
+
+// fuente a
+
+real ax0, ay0;
+ax0=-10;
+ay0=10;
+
+// fuente b
+
+real bx0, by0;
+bx0=16;
+by0=17;
+
+
+
+// ******************* definicion fuente puntual A **********************
+
+border C2a(t=0, 2*pi) { x=ax0+0.0001*cos(t); y = ay0+0.0001*sin(t);};   // forma fuente circular
+
+// calculo infinitesimal C = {-10, 10, fp = 100 W/m2
+
+mesh mallafp1 = buildmesh(C2a(30));  // mallado fp1
+
+fespace Vhfp1(mallafp1, P1);
+
+Vhfp1 fp1; 
+
+real AA = 2000; //intensidad fp1
+
+
+
+// ******************* definicion fuente puntual B **********************
+
+border C2p(t=0, 2*pi) { x=bx0+0.0001*cos(t); y = by0+0.0001*sin(t);}; // forma fuente circular
+
+// calculo infinitesimal C = {16, 17}, fp = 400 W/m2
+
+mesh mallafp2 = buildmesh(C2p(30));  //mallado fp2
+
+fespace Vhfp2(mallafp2, P1);
+Vhfp2 fp2; 
+
+real BB = 4000; //intensidad fp2
+
+
+
+// ********* definicion de radio de accion de las fuentes puntuales ***************
+
+real lambda = 2;
+
+fp1 = AA * exp(-lambda * ((x - ax0)^2 + (y - ay0)^2));
+fp2 = BB * exp(-lambda * ((x - bx0)^2 + (y - by0)^2));
+
+real area1 = int2d(mallafp1)(1.);
+real area2 = int2d(mallafp2)(1.);
+
+
+
+
+// *********** comprobacion de calculo infinitesimal ********************
+
+real I1;
+I1 = int2d(mallafp1)(fp1);
+I1 = I1/area1; // I1 == AA
+
+cout << "promedio integral I1: " << I1 << "\n";
+
+real I2;
+I2 = int2d(mallafp2)(fp2);
+I2 = I2/area2; // I2 == BB
+
+cout << "promedio integral I2: " << I2 << "\n";
+
+
+
+//*************************dif 1***************************
+
+// definicion del problema mientras existen las fuentes puntuales
+// siendo A(-10, 10) y B(16, 17)
+
+problem convecdif1 (T,v)=
+
+int2d (malla)   (T*v / dt) - int2d(malla)(Toldt*v / dt)  // derivada parcial resp tiempo
++int2d(malla)   (u1*dx(T)*v+u2*dy(T)*v)                  // termino nuevo de conveccion
++int2d(malla)   (k*dx(T)*dx(v)+k*dy(T)*dy(v))            // metodo de Euler en estos terminos difusivos
+-int1d(malla,2) (10*k*v) -int1d(malla,3)(10*k*v)         // flujo respecto a la normal contorno (2, 3) orden 10
++int2d(malla)   (r*T*v)
+
+// integrales fuentes puntuales, de vertidos
+
+-int2d(mallafp1)((fp1 / area1) * v)
+-int2d(mallafp2)((fp2 / area2) * v)
+
+ + on (1,T=100)    // contorno 1 T = 100
+ + on (4,T=200);   // contorno 4 T = 200
+
+
+
+
+//************************dif 2****************************
+
+// evolucion del problema de temperatura 
+// cuando dejan de existir las fuentes putuales
+
+problem convecdif2 (T,v) =
+
+int2d (malla)   (T*v / dt) - int2d(malla)(Toldt*v / dt)   // derivada parcial resp tiempo
++int2d(malla)   (u1*dx(T)*v+u2*dy(T)*v)                   // termino nuevo de conveccion
++int2d(malla)   (k*dx(T)*dx(v)+k*dy(T)*dy(v))             // metodo de Euler en estos terminos difusivos
+-int1d(malla,2) (10*k*v) -int1d(malla,3)(10*k*v) 
++int2d(malla)   (r*T*v)
+
+ + on (1,T=100)
+ + on (4,T=200);
+
+
+ 
+
+// Evaluacion del problema
+
+real Tmax=600;
+convecdif1;
+
+for(t=0;t<Tmax;t+=dt) {
+
+    Toldt=T;
+
+    if (t < 0.1) {  // a partir de t = 0.1 dejan de existir las fuentes puntuales
+        convecdif1;
+    } else {
+        convecdif2;
+    }
+
+    if ( !(t % 10))
+    plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1,nbiso=40);
+} 
+

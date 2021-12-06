@@ -1,5 +1,5 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puerta frigorifico dos regiones.edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puerta fri@w³gorifico dos regiones.edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : // caso estacionario
     2 :
@@ -7,12 +7,12 @@
     4 : // APLICACION CALCULO DE TEMPERATURAS INTERIOR A UNA PUERTA DE DOS MATERIALES
     5 :
     6 : // CORCHO DANDO AL INTERIOR DE UN CONGELADOR con espesor o longitud 8 cm Y VIDRIO DANDO AL EXTERIOR con espesor
-Àýü12 cm
+@w³12 cm
     7 :
-    8 : // CONSIDERAMOS TEMPERATURA FIJA EN BORDE INTERIOR A -20 º C y AMBIEN EN BORDE EXTERIOR TEMPERATURA CTE A 25 ºC
-Àýü    9 :
+    8 : // CONSIDERAMOS TEMPERATURA FIJA EN BORDE INTERIOR A -20 ï¿½ C y AMBIEN EN BORDE EXTERIOR TEMPERATURA CTE A 25 ï@w³¿½C
+    9 :
    10 : // PARA QUE LOS RESULTADOS SEAN IGUALES QUE CALCULOS EN 1D CONSIDERAMOS en LOS CONTORNOS HORIZONTALES EN ALTURA
-Àýüh= 0
+@w³h= 0
    11 : // y H= altura de la puerta , que en ambos contornos el flujo es nulo
    12 :
    13 : int n=2;
@@ -38,19 +38,19 @@
    33 : Ph reg=region;                // a continuacion decimos dos regiones la region vidrio y la region corcho
    34 :
    35 : int vidrio = reg (12.,0.5);  // define una region que es la parte de la puerta que es de VIDRIO
-   36 :                              //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=12Àýü y=0.5
+   36 :                              //y es region de puntos (x,y) que tienen los mismos contornos que el del punto x=12@w³ y=0.5
    37 :
    38 : int corcho = reg (4.0,0.5);  // define region correspondiente a la parte de CORCHO de la puerta
-   39 :                              // es la region de puntos (x,y) que tienen igual contorno que el del punto x=4  y=0Àýü.5
+   39 :                              // es la region de puntos (x,y) que tienen igual contorno que el del punto x=4  y=0@w³.5
    40 : plot (reg,fill=1);
    41 :
    42 : real k1,k2;
-   43 : k1=0.008;         //conductividad termica en el subdominio1     VIDRIO  (unidades es Watio/(cm ºC)
+   43 : k1=0.008;         //conductividad termica en el subdominio1     VIDRIO  (unidades es Watio/(cm ï¿½C)
    44 : k2=0.0004;              //conductividad termica en subdominio2  CORCHO
    45 :
    46 :
    47 : fespace Vh(malla,P1); // polinomios de interpola de grado uno
-   48 : /* aconsejable cuando hay cmbio de materiales que implican dvalores numericos muy ditintos de parametros a evaluÀýüar en las integrales*/
+   48 : /* aconsejable cuando hay cmbio de materiales que implican dvalores numericos muy ditintos de parametros a evalu@w³ar en las integrales*/
    49 :
    50 : Vh u,k,v,uu;
    51 :
@@ -74,8 +74,8 @@
   -- Solve :
           min -20  max 25
  u = 21.7039
-times: compile 0.266s, execution 2.828s,  mpirank:0
+times: compile 0.213s, execution 1.976s,  mpirank:0
  ######## We forget of deleting   63 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
  CodeAlloc : nb ptr  3913,  size :502272 mpirank: 0
 Ok: Normal End
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puerta frigorifico dos regiones.Àýüedp
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\9 VARIOS MATERIALES O SUBDOMINIOS\4c puer@w³ta frigorifico dos regiones.edp

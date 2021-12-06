@@ -1,6 +1,5 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolutivo
-ESTACIONARIOEuler  NO ESTACIONARIO.edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolutivo Euler  NO ESTACIONARIO.edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : int n=40;
     2 :
@@ -234,4 +233,100 @@ ESTACIONARIOEuler  NO ESTACIONARIO.edp
   -- Solve :
           min 20  max 49.0135
  u = 23.0702
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolESTACIONARIOutivo Euler  NO ESTACIONARIO.edp
+  -- Solve :
+          min 20  max 49.0136
+ u = 23.071
+  -- Solve :
+          min 20  max 49.0137
+ u = 23.0718
+  -- Solve :
+          min 20  max 49.0138
+ u = 23.0725
+  -- Solve :
+          min 20  max 49.0139
+ u = 23.0731
+  -- Solve :
+          min 20  max 49.0139
+ u = 23.0737
+  -- Solve :
+          min 20  max 49.014
+ u = 23.0742
+  -- Solve :
+          min 20  max 49.014
+ u = 23.0746
+  -- Solve :
+          min 20  max 49.0141
+ u = 23.075
+  -- Solve :
+          min 20  max 49.0141
+ u = 23.0753
+  -- Solve :
+          min 20  max 49.0142
+ u = 23.0756
+  -- Solve :
+          min 20  max 49.0142
+ u = 23.0758
+  -- Solve :
+          min 20  max 49.0142
+ u = 23.0761
+  -- Solve :
+          min 20  max 49.0143
+ u = 23.0763
+  -- Solve :
+          min 20  max 49.0143
+ u = 23.0765
+  -- Solve :
+          min 20  max 49.0143
+ u = 23.0766
+  -- Solve :
+          min 20  max 49.0143
+ u = 23.0768
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0769
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.077
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0771
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0772
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0773
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0774
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0774
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0775
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0775
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0776
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0776
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0776
+  -- Solve :
+          min 20  max 49.0144
+ u = 23.0777
+  -- Solve :
+          min 20  max 49.0145
+ u = 23.0777
+  -- Solve :
+          min 20  max 49.0145
+ u = 23.0777
+  -- Solve :
+          min 20  max 49.0145
+ u = 23.0777
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 c  conveccion evolutivo Euler  NO ESTACIONARIO.edp

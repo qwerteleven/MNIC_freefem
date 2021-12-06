@@ -1,0 +1,244 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\problema_conveccion_y_difusion.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 :
+    2 :
+    3 : /* PROBLEMA CONVECCION DIFUSION Y EVOLUTIVO EN EL TIEMPO HACIA LA SOLUCION ESTACIONARIA  */
+    4 :
+    5 : real dt=0.01, t=0; // paso de tiempo
+    6 :
+    7 : int n=100;
+    8 :
+    9 :
+   10 : // definicion de contornos
+   11 : border a(t=20,0) {x=-12;y=t;label=1;}
+   12 : border b(t=-12,0) {x=t;y=0;label=2;}
+   13 : border c(t=0,20) {x=t; y=t ;label=4;}
+   14 : border d(t=20,-12) {x=t;y=20;label=3;}
+   15 :
+   16 : //definicion de malla
+   17 : mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n));
+   18 : plot(malla, wait=1);
+   19 :
+   20 :
+   21 : real alpha=1/dt;
+   22 :
+   23 : fespace Vh(malla, P1);
+   24 : Vh T,v,u1,u2,k,Toldt;
+   25 :
+   26 :
+   27 : // T es la incognita u
+   28 : // r es la constante del termino de reaccion
+   29 :
+   30 : real r=0.2;
+   31 :
+   32 : // velocidad
+   33 : u1=10; // Wx
+   34 : u2=10; // Wy
+   35 :
+   36 : k=5;
+   37 : Toldt=100;
+   38 : plot([u1, u2], wait=1);  // vista de los vectores de velocidad
+   39 :
+   40 :
+   41 :
+   42 :
+   43 :
+   44 : //**************** adaptacion de malla ***************
+   45 : for (int i = 0 ; i < 2; i++) {
+   46 :
+   47 :     malla = adaptmesh(malla, T, v, err=0.0001, hmax=0.1,
+   48 :      hmin=0.01, cutoff=1e-6, ratio=1.6, nbvx=60000, splitpbedge=2,
+   49 :      power=1, abserror=true, nomeshgeneration=false, anisomax=1);
+   50 :
+   51 :     fespace Vh0(malla, P0);
+   52 :     Vh0 h=hTriangle;
+   53 :     real hmax=h[].max;
+   54 :     real hmin=h[].min;
+   55 :
+   56 :     cout << "hmax: " << hmax << "\n";
+   57 :     cout << "hmin: " << hmin << "\n";
+   58 :
+   59 :     plot(malla, wait=1);
+   60 : }
+   61 :
+   62 :
+   63 :
+   64 :
+   65 :
+   66 : //********************** fuentes puntuales **************
+   67 :
+   68 : // fuente a
+   69 :
+   70 : real ax0, ay0;
+   71 : ax0=-10;
+   72 : ay0=10;
+   73 :
+   74 : // fuente b
+   75 :
+   76 : real bx0, by0;
+   77 : bx0=16;
+   78 : by0=17;
+   79 :
+   80 :
+   81 :
+   82 : // ******************* definicion fuente puntual A **********************
+   83 :
+   84 : border C2a(t=0, 2*pi) { x=ax0+0.0001*cos(t); y = ay0+0.0001*sin(t);};   // forma fuente circular
+   85 :
+   86 : // calculo infinitesimal C = {-10, 10, fp = 100 W/m2
+   87 :
+   88 : mesh mallafp1 = buildmesh(C2a(30));  // mallado fp1
+   89 :
+   90 : fespace Vhfp1(mallafp1, P1);
+   91 :
+   92 : Vhfp1 fp1;
+   93 :
+   94 : real AA = 2000; //intensidad fp1
+   95 :
+   96 :
+   97 :
+   98 : // ******************* definicion fuente puntual B **********************
+   99 :
+  100 : border C2p(t=0, 2*pi) { x=bx0+0.0001*cos(t); y = by0+0.0001*sin(t);}; // forma fuente circular
+  101 :
+  102 : // calculo infinitesimal C = {16, 17}, fp = 400 W/m2
+  103 :
+  104 : mesh mallafp2 = buildmesh(C2p(30));  //mallado fp2
+  105 :
+  106 : fespace Vhfp2(mallafp2, P1);
+  107 : Vhfp2 fp2;
+  108 :
+  109 : real BB = 4000; //intensidad fp2
+  110 :
+  111 :
+  112 :
+  113 : // ********* definicion de radio de accion de las fuentes puntuales ***************
+  114 :
+  115 : real lambda = 2;
+  116 :
+  117 : fp1 = AA * exp(-lambda * ((x - ax0)^2 + (y - ay0)^2));
+  118 : fp2 = BB * exp(-lambda * ((x - bx0)^2 + (y - by0)^2));
+  119 :
+  120 : real area1 = int2d(mallafp1)(1.);
+  121 : real area2 = int2d(mallafp2)(1.);
+  122 :
+  123 :
+  124 :
+  125 :
+  126 : // *********** comprobacion de calculo infinitesimal ********************
+  127 :
+  128 : real I1;
+  129 : I1 = int2d(mallafp1)(fp1);
+  130 : I1 = I1/area1; // I1 == AA
+  131 :
+  132 : cout << "promedio integral I1: " << I1 << "\n";
+  133 :
+  134 : real I2;
+  135 : I2 = int2d(mallafp2)(fp2);
+  136 : I2 = I2/area2; // I2 == BB
+  137 :
+  138 : cout << "promedio integral I2: " << I2 << "\n";
+  139 :
+  140 :
+  141 :
+  142 : //*************************dif 1***************************
+  143 :
+  144 : // definicion del problema mientras existen las fuentes puntuales
+  145 : // siendo A(-10, 10) y B(16, 17)
+  146 :
+  147 : problem convecdif1 (T,v)=
+  148 :
+  149 : int2d (malla)   (T*v / dt) - int2d(malla)(Toldt*v / dt)  // derivada parcial resp tiempo
+  150 : +int2d(malla)   (u1*dx(T)*v+u2*dy(T)*v)                  // termino nuevo de conveccion
+  151 : +int2d(malla)   (k*dx(T)*dx(v)+k*dy(T)*dy(v))            // metodo de Euler en estos terminos difusivos
+  152 : -int1d(malla,2) (10*k*v) -int1d(malla,3)(10*k*v)         // flujo respecto a la normal contorno (2, 3) orden 10
+  153 : +int2d(malla)   (r*T*v)
+  154 :
+  155 : // integrales fuentes puntuales, de vertidos
+  156 :
+  157 : -int2d(mallafp1)((fp1 / area1) * v)
+  158 : -int2d(mallafp2)((fp2 / area2) * v)
+  159 :
+  160 :  + on (1,T=100)    // contorno 1 T = 100
+  161 :  + on (4,T=200);   // contorno 4 T = 200
+  162 :
+  163 :
+  164 :
+  165 :
+  166 : //************************dif 2****************************
+  167 :
+  168 : // evolucion del problema de temperatura
+  169 : // cuando dejan de existir las fuentes putuales
+  170 :
+  171 : problem convecdif2 (T,v) =
+  172 :
+  173 : int2d (malla)   (T*v / dt) - int2d(malla)(Toldt*v / dt)   // derivada parcial resp tiempo
+  174 : +int2d(malla)   (u1*dx(T)*v+u2*dy(T)*v)                   // termino nuevo de conveccion
+  175 : +int2d(malla)   (k*dx(T)*dx(v)+k*dy(T)*dy(v))             // metodo de Euler en estos terminos difusivos
+  176 : -int1d(malla,2) (10*k*v) -int1d(malla,3)(10*k*v)
+  177 : +int2d(malla)   (r*T*v)
+  178 :
+  179 :  + on (1,T=100)
+  180 :  + on (4,T=200);
+  181 :
+  182 :
+  183 :
+  184 :
+  185 : // Evaluacion del problema
+  186 :
+  187 : real Tmax=600;
+  188 : convecdif1;
+  189 :
+  190 : for(t=0;t<Tmax;t+=dt) {
+  191 :
+  192 :     Toldt=T;
+  193 :
+  194 :     if (t < 0.1) {  // a partir de t = 0.1 dejan de existir las fuentes puntuales
+  195 :         convecdif1;
+  196 :     } else {
+  197 :         convecdif2;
+  198 :     }
+  199 :
+  200 :     if ( !(t % 10))
+  201 :     plot(T,cmm=" t="+t + ", min=" + T[].min + ", max=" + T[].max,value=1,nbiso=40);
+  202 : }
+  203 :
+  204 :  sizestack + 1024 =10032  ( 9008 )
+ 
+  --  mesh:  Nb of Triangles =  16956, Nb of Vertices 8679
+  number of required edges : 0
+  -- adaptmesh statistics:  Nb triangles 101389 , h  min 0.0382634 , h max 0.173845
+     area =  440 , M area = 44000 , M area/( |Khat| nt) 1.00222
+     infiny-regularity:  min 0.371865  max 1.85282
+     anisomax  2.92918, beta max = 1.57124 min  0.645328
+  --  mesh:  Nb of Triangles = 101389, Nb of Vertices 51157
+hmax: 0.173845
+hmin: 0.0820211
+  number of required edges : 0
+  -- adaptmesh statistics:  Nb triangles 101373 , h  min 0.0382899 , h max 0.153895
+     area =  440 , M area = 44000 , M area/( |Khat| nt) 1.00237
+     infiny-regularity:  min 0.369605  max 1.62095
+     anisomax  2.93551, beta max = 1.57914 min  0.734061
+  --  mesh:  Nb of Triangles = 101373, Nb of Vertices 51149
+hmax: 0.153895
+hmin: 0.0846268
+  --  mesh:  Nb of Triangles =    152, Nb of Vertices 92
+  --  mesh:  Nb of Triangles =    150, Nb of Vertices 91
+promedio integral I1: 2000
+promedio integral I2: 4000
+  -- Solve :
+          min 99.8004  max 419.092
+  -- Solve :
+          min 99.6012  max 482.572
+  -- Solve :
+          min 99.4024  max 515.19
+  -- Solve :
+          min 99.204  max 536.592
+  -- Solve :
+          min 99.006  max 551.873
+  -- Solve :
+          min 98.8084  max 563.273
+  -- Solve :
+          min 98.6111  max 572.035
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\problema_conveccion_y_difusion.edp

@@ -7,7 +7,7 @@ int i=0;
 
 border a(t=0,1) {x=t;y=0;label=1;}
 border b(t=0,1) {x=1.;y=t;label=2;}
-border C(t=1,0) {x=t; y=1 ;label=3;}
+border C(t=1,0) {x=t; y=1.;label=3;}
 border d(t=1,0) {x=0.;y=t;label=4;}
 
 mesh Th = buildmesh(a(n)+b(n)+C(n)+d(n));

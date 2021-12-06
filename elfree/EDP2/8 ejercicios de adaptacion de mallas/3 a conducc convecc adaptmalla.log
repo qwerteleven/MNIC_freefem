@@ -3,91 +3,17 @@
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : //Definimos el dominio de estudio, creamos la malla y la dibujamos
     2 : //----------------------------------------------------------------
-    3 : border a(t=-2,  1) {x=t; y=-2;label=1;};
-    4 : border b(t=-2,  1) {x=1; y=t;label=1;};
-    5 : border c(t= 1, -2) {x=t; y=1;label=1;};
-    6 : border d(t= 1, -2) {x=-2;y=t;label=1;};
-    7 :
-    8 :
-    9 : real pi2=2*pi;
-   10 : border e(t=0,pi2) {x=0.25*cos(t); y=0.25*sin(t);label=2;};
-   11 :
-   12 : int n=10;
-   13 : mesh malla = buildmesh(a(n)+b(n)+c(n)+d(n)+e(-4*n));
-   14 : plot(malla, wait=1);
-   15 :
-   16 :
-   17 : //Definimos el problema que queremos resolver
-   18 : //-------------------------------------------
-   19 : fespace Vh(malla,P2);
-   20 : Vh u,v,kx,ky; // u es temperatura en grados Celsius
-   21 :
-   22 : //Conductividad tï¿½rmica constante
-   23 : kx=2.;
-   24 : ky=2.;
-   25 : //Coeficiente de convecciï¿½n y temperatura del fluido, p.e. aire,
-   26 : //dentro de la circunferencia
-   27 :
-   28 : real hc=80.;
-   29 : real uf=20.;
-   30 :
-   31 : problem calor(u,v) = int2d(malla) (kx*dx(u)*dx(v)+ky*dy(u)*dy(v))
-   32 : + int1d(malla,2) (hc*u*v) - int1d(malla,2) (hc*uf*v)
-   33 : + on(1,u=20);
-   34 :
-   35 : //Resolvemos el problema y dibujamos la soluciï¿½n
-   36 : //----------------------------------------------
-   37 :
-   38 : for(real i=0;i<2;i+=1)    // nro de iteraciones CIUDAO CON SER MUY EXIGENTES, SE RECOMIENDA max 3
-   39 : {
-   40 :
-   41 : //nbvx numero maximo de vertices  err error triangulo
-   42 :
-   43 : malla = adaptmesh(malla,u,v,err=0.001,hmax=0.1,hmin=0.01,cutoff=1e-6,ratio=1.6,nbvx=20000,
-   44 : splitpbedge=2,power=1,abserror=true,nomeshgeneration=false,anisomax=1);
-   45 :
-   46 : // error suele considerase 0.01  , 0.001.,
-   47 : // hmax , hmin  es el tamaï¿½o max  y min de los triangulos de la malla
-   48 :
-   49 : // nbvx = numero de vertices de la malla   , esto lo impone severamente
-   50 :
-   51 :
-   52 : // tenemos que calibar un poco en el sentido que no debo elegir un error muy pequeï¿½o y sin embargo
-   53 : //  poner tamaï¿½os grande s a los triangulos
-   54 :
-   55 : plot (malla, wait=1);
-   56 :
-   57 : // err  es error max en un triangulo o elemento finito
-   58 :  // nbvx es nro vertices maximo
-   59 :
-   60 : calor;
-   61 :
-   62 : plot(u,value=1);
-   63 :
-   64 : }
-   65 :
-   66 :
-   67 :  sizestack + 1024 =2384  ( 1360 )
- 
-  --  mesh:  Nb of Triangles =    784, Nb of Vertices 432
-  number of required edges : 0
-  -- adaptmesh statistics:  Nb triangles 2709 , h  min 0.0174776 , h max 0.143674
-     area =  8.80391 , M area = 1179.81 , M area/( |Khat| nt) 1.00578
-     infiny-regularity:  min 0.474801  max 1.80434
-     anisomax  2.35154, beta max = 1.2935 min  0.789907
-  --  mesh:  Nb of Triangles =   2709, Nb of Vertices 1450
-  -- Solve :
-          min 20  max 20
-  number of required edges : 0
-  -- adaptmesh statistics:  Nb triangles 2666 , h  min 0.0156457 , h max 0.141233
-     area =  8.80392 , M area = 1135.63 , M area/( |Khat| nt) 0.983734
-     infiny-regularity:  min 0.424306  max 1.67247
-     anisomax  2.39507, beta max = 1.26173 min  0.815617
-  --  mesh:  Nb of Triangles =   2666, Nb of Vertices 1428
-  -- Solve :
-          min 20  max 20
-times: compile 0.617s, execution 5.371s,  mpirank:0
- ######## We forget of deleting   102 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
- CodeAlloc : nb ptr  3867,  size :502088 mpirank: 0
-Ok: Normal End
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\8 ejercicios de adaptacion de mallas\3 a conducc convecc adaptmalla.e°/Ó dp
+    3 :
+    4 : border a (t=0,0.6) {x=t;y=0;label=1;};
+    5 : border b (t=0,1) {x=0.6;y=t;label=2;};
+    6 : border c (t=0.6,0) {x=t;y=1;label=2;};
+    7 : border d (t=1,0) {x=0;y=t;label=3;};>
+ Error line number 7, in file C:\Users\admin\Desktop\elfree\EDP2\8 ejercicios de adaptacion de mallas\3 a conducc convecc adaptmalla.edp, before  token >
+syntax error
+  current line = 7
+Compile error : syntax error
+        line number :7, >
+error Compile error : syntax error
+        line number :7, >
+ code = 1 mpirank: 0
+ try getConsole C:\Users\admin\Desktop\elfree\EDP2\8 ejercicios de adaptacion de mallas\3 a conducc convecc adaptmalla.edp

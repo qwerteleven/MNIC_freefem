@@ -1,0 +1,86 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\ejercicio_2.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : // caso estacionario
+    2 :
+    3 : int n=1;
+    4 : //int m=140;
+    5 :
+    6 : border a (t=10, 5) {x=t;y=6;label=2;};   // region de aluminio
+    7 :
+    8 : border b (t=0, 6)  {x=10;y=t;label=1;};  // conveccion de fluido
+    9 :
+   10 : border c (t=0, 10) {x=t;y=0;label=2;};
+   11 : border d (t=3, 0) {x=0;y=t;label=2;};
+   12 :
+   13 : border e (t=0, 5) {x=t;y=3;label=3;}; // interface material
+   14 : border f (t=3, 6) {x=5;y=t;label=3;};
+   15 :
+   16 : border g (t=6, 3) {x=0;y=t;label=2;}; // region de cobre
+   17 : border h (t=5, 0) {x=t;y=6;label=2;};
+   18 :
+   19 :
+   20 : mesh malla = buildmesh(a(5*n)+b(6*n)+c(10*n)+d(3*n)+e(5*n)+f(3*n)+g(3*n)+h(5*n));
+   21 :
+   22 : plot(malla,wait=1);
+   23 :
+   24 : fespace Ph(malla,P1);
+   25 : Ph reg=region;                // a continuacion decimos dos regiones la region cobre y la region aluminio
+   26 :
+   27 : int cobre =    reg(0.5, 5.5);  // define una region que es de COBRE
+   28 : int aluminio = reg(5.5, 5.5);  // define una region que es de ALUMINIO
+   29 :
+   30 : plot (reg,fill=1);
+   31 :
+   32 : real k1,k2;
+   33 : k1=385.0;         //conductividad termica en el subdominio1     COBRE    (unidades es Watio/(m K)
+   34 : k2=205.0;                  //conductividad termica en el subdominio2     ALUMINIO (unidades es Watio/(m K)
+   35 :
+   36 :
+   37 : fespace Vh(malla, P1); // polinomios de interpola de grado uno
+   38 :
+   39 : /* aconsejable cuando hay cmbio de materiales que implican dvalores numericos muy ditintos de parametros a evaluar en las integrales*/
+   40 :
+   41 : Vh u,k,v,uu;
+   42 :
+   43 : real hc=60.; //Coeficiente de convecci�n y temperatura del fluido, p.e. aire, dentro de la circunferencia
+   44 : real uf=80.; // temperatura aire o agua o fluido dentro del orifico, es decir en contacto con contorno label =2
+   45 :
+   46 : real hc2=14.; //Coeficiente de convecci�n y temperatura del fluido, p.e. aire, en el exterior del cuadrado
+   47 : real uf2=20.; // temperatura aire exterior
+   48 :
+   49 :
+   50 : real epsilon=0.00000001;
+   51 :
+   52 : problem Calor(u,v) =
+   53 : int2d(malla) (epsilon*u*v)
+   54 : +int2d (malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))
+   55 :
+   56 : //+ int1d(malla,1) (hc*u*v)  - int1d(malla,1) (hc*uf*v) // conveccion fluido
+   57 :
+   58 : //+ int1d(malla,2) (hc2*u*v) - int1d(malla,2) (hc2*uf2*v) // conveccion aire
+   59 :
+   60 :  + on (1, u=80)
+   61 :  + on (2, u=20);
+   62 :
+   63 :
+   64 : k = k1*(region==cobre)+k2*(region==aluminio);
+   65 :
+   66 : Calor;
+   67 :
+   68 : x=7.0;
+   69 : y=3.0;
+   70 : uu=u(x, y); // temperatura en la interfase cobre-aluminio
+   71 : cout << " u = " << uu << endl; // plotea en pantalla
+   72 : plot(u,value=1);
+   73 :  sizestack + 1024 =2632  ( 1608 )
+ 
+  --  mesh:  Nb of Triangles =    128, Nb of Vertices 81
+  -- Solve :
+          min 20  max 80
+ u = 35.4664
+times: compile 0.284s, execution 1.548s,  mpirank:0
+ ######## We forget of deleting   46 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  3966,  size :504928 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\ejercicio_2.edp

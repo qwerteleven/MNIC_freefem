@@ -1,5 +1,5 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc convecc - sin Dirichlet.edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc conve B3cc - sin Dirichlet.edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : //Definimos el dominio de estudio, creamos la malla y la dibujamos
     2 : //----------------------------------------------------------------
@@ -51,8 +51,8 @@
   --  mesh:  Nb of Triangles =    836, Nb of Vertices 462
   -- Solve :
           min 20.3098  max 48.2201
-times: compile 0.185s, execution 0.28s,  mpirank:0
+times: compile 0.164s, execution 0.918s,  mpirank:0
  ######## We forget of deleting   38 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
  CodeAlloc : nb ptr  3878,  size :503672 mpirank: 0
 Ok: Normal End
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc convecc - sin Dirichlet.edp€7®
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\10 CASO SOLO FLUJOS EN CONTORNO\1 conducc B3 convecc - sin Dirichlet.edp
