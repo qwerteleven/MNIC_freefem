@@ -1,5 +1,5 @@
 -- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
-   file : C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp
  Load: lg_fem lg_mesh lg_mesh3 eigenvalue
     1 : int n=40;
     2 :
@@ -197,4 +197,56 @@
  u = 22.2252
   -- Solve :
           min 20  max 48.9125
- try getConsole C:\Users\admin\Desktop\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp
+ Eseminorma H1 = 0.830885
+ EL2 = 0.235139
+ EH1 = 0.863516
+ u = 22.3192
+  -- Solve :
+          min 20  max 48.9243
+ Eseminorma H1 = 0.736037
+ EL2 = 0.208296
+ EH1 = 0.764943
+ u = 22.4034
+  -- Solve :
+          min 20  max 48.9347
+ Eseminorma H1 = 0.65205
+ EL2 = 0.184523
+ EH1 = 0.677656
+ u = 22.4787
+  -- Solve :
+          min 20  max 48.9439
+ Eseminorma H1 = 0.577662
+ EL2 = 0.163466
+ EH1 = 0.600346
+ u = 22.5458
+  -- Solve :
+          min 20  max 48.952
+ Eseminorma H1 = 0.511769
+ EL2 = 0.144814
+ EH1 = 0.531863
+ u = 22.6057
+  -- Solve :
+          min 20  max 48.9591
+ Eseminorma H1 = 0.453394
+ EL2 = 0.128291
+ EH1 = 0.471195
+ u = 22.6589
+  -- Solve :
+          min 20  max 48.9655
+ Eseminorma H1 = 0.401678
+ EL2 = 0.113654
+ EH1 = 0.417447
+ u = 22.7063
+  -- Solve :
+          min 20  max 48.9711
+ Eseminorma H1 = 0.355861
+ EL2 = 0.100687
+ EH1 = 0.369831
+ u = 22.7484
+  -- Solve :
+          min 20  max 48.976
+ Eseminorma H1 = 0.315269
+ EL2 = 0.0891999
+ EH1 = 0.327645
+ u = 22.7858
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\0 criterio parada conveccion evolutivo Euler  NO ESTACIONARIO.edp

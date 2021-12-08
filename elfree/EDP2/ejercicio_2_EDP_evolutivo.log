@@ -1,0 +1,604 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\ejercicio_2_EDP_evolutivo.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : // caso evolutivo
+    2 :
+    3 :
+    4 : // ****************** definicion del espacio del problema **********************
+    5 :
+    6 : int n=10;
+    7 :
+    8 : real t, T = 1., dt = 0.01; // variables para la derivacion respecto del tiempo
+    9 :
+   10 : border a (t=10, 5) {x=t;y=6;label=2;};   // region de aluminio
+   11 :
+   12 : border b (t=0, 6)  {x=10;y=t;label=1;};  // conveccion de fluido
+   13 :
+   14 : border c (t=0, 10) {x=t;y=0;label=2;};   // conveccion aire
+   15 : border d (t=3, 0) {x=0;y=t;label=2;};    // conveccion aire
+   16 :
+   17 : border e (t=0, 5) {x=t;y=3;label=3;};    // interface material
+   18 : border f (t=3, 6) {x=5;y=t;label=3;};    // interface material
+   19 :
+   20 : border g (t=6, 3) {x=0;y=t;label=2;};    // region de cobre
+   21 : border h (t=5, 0) {x=t;y=6;label=2;};    // conveccion aire
+   22 :
+   23 :
+   24 : mesh malla = buildmesh(a(5*n)+b(6*n)+c(10*n)+d(3*n)+e(5*n)+f(3*n)+g(3*n)+h(5*n));
+   25 :
+   26 : plot(malla,wait=1);
+   27 :
+   28 :
+   29 :
+   30 : //***************** definicion de regiones *************************
+   31 :
+   32 : fespace Ph(malla,P1);
+   33 : Ph reg=region;
+   34 :
+   35 : int cobre    = reg(0.5, 5.5);  // define una region que es de COBRE
+   36 : int aluminio = reg(5.5, 5.5);  // define una region que es de ALUMINIO
+   37 :
+   38 : plot (reg, fill=1);
+   39 :
+   40 :
+   41 : real k1,k2; // temperatura 23ºC
+   42 : k1=380.0;   // conductividad termica en el subdominio1  COBRE    (unidades es Watio/(m K)
+   43 : k2=237.0;   // conductividad termica en el subdominio2  ALUMINIO (unidades es Watio/(m K)
+   44 :
+   45 :
+   46 :
+   47 : //******************* definicion de los elemtos externos al material **************************
+   48 :
+   49 : fespace Vh(malla, P1);
+   50 :
+   51 : Vh told, uold, u,k,v,uu;
+   52 :
+   53 : real hc=60.; // Coeficiente de conveccion fluido
+   54 : real uf=80.; // temperatura fluido
+   55 :
+   56 : real hc2=14.; // Coeficiente de conveccion aire
+   57 : real uf2=20.; // temperatura aire
+   58 :
+   59 :
+   60 :
+   61 : //***************** definicion del problema **********************
+   62 :
+   63 : real epsilon = 1e-8;
+   64 : told=0;              // temperatura de la que parte el material
+   65 :
+   66 :
+   67 : problem calor(u, v) =
+   68 : int2d(malla)(epsilon*u*v)                                // para asegurar la unicidad de solucion, al carecer de condiciones diricher
+   69 :
+   70 : + int2d(malla) (u*v / dt) - int2d(malla)(told*v / dt)    // derivada respecto del tiempo
+   71 :
+   72 : + int2d (malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))
+   73 :
+   74 : + int1d(malla,1) (hc*u*v)  - int1d(malla,1) (hc*uf*v)    // conveccion fluido
+   75 : + int1d(malla,2) (hc2*u*v) - int1d(malla,2) (hc2*uf2*v); // conveccion aire
+   76 :
+   77 :
+   78 : k = k1*(region==cobre)+k2*(region==aluminio); // asignacion de de material a las regiones
+   79 :
+   80 :
+   81 :
+   82 : //************ resolucion del problema *****************
+   83 :
+   84 : real tolerror = 1e-4;
+   85 :
+   86 : uold = 1; // valor arbitrario para asegurar la exactiud de la solucion
+   87 :
+   88 : x=7.0;
+   89 : y=3.0;
+   90 : cout << " u = " << uold << "-------------" << u(x, y) << endl; // plotea en pantalla
+   91 :
+   92 : while(sqrt((uold - u(x, y))^2) > tolerror) {
+   93 :
+   94 :     uold = u(x, y);
+   95 :
+   96 :     calor; // problema
+   97 :     told=u;
+   98 :
+   99 :     plot(told, cmm=" tiempo ="+t, nbiso=30, value=1);
+  100 :
+  101 :     uu = u(x, y); // temperatura en punto (x, y)
+  102 :     cout << " u = " << uu << " u_old = " << uold << endl; // plotea en pantalla
+  103 :
+  104 :     cout << "distacia = " << sqrt((uold - u(x, y))^2) << endl;
+  105 :
+  106 :     t+=dt;
+  107 : }
+  108 :
+  109 :
+  110 :
+  111 : // **************** visualizacion de las direccion de temperatura **************************
+  112 :
+  113 : Vh qx = -k*dx(u);
+  114 : Vh qy = -k*dy(u);
+  115 :
+  116 : // qx flujo de calor en direccion x
+  117 : // qy flujo de calor en direccion y
+  118 :
+  119 : plot([qx,qy], wait=1, fill=1);
+  120 :
+  121 :  sizestack + 1024 =5320  ( 4296 )
+ 
+  --  mesh:  Nb of Triangles =  13638, Nb of Vertices 6980
+ u = 1-------------0
+  -- Solve :
+          min 1.01513  max 22.8199
+ u = 3.55343 u_old = 0
+distacia = 3.55343
+  -- Solve :
+          min 2.63128  max 30.905
+ u = 8.24024 u_old = 3.55343
+distacia = 4.68681
+  -- Solve :
+          min 4.46493  max 35.9102
+ u = 12.6997 u_old = 8.24024
+distacia = 4.4595
+  -- Solve :
+          min 6.35382  max 39.471
+ u = 16.5902 u_old = 12.6997
+distacia = 3.89051
+  -- Solve :
+          min 8.24366  max 42.1789
+ u = 19.9197 u_old = 16.5902
+distacia = 3.32949
+  -- Solve :
+          min 10.1089  max 44.3338
+ u = 22.7749 u_old = 19.9197
+distacia = 2.85521
+  -- Solve :
+          min 11.9213  max 46.1037
+ u = 25.2439 u_old = 22.7749
+distacia = 2.46899
+  -- Solve :
+          min 13.6571  max 47.592
+ u = 27.3993 u_old = 25.2439
+distacia = 2.15534
+  -- Solve :
+          min 15.2965  max 48.866
+ u = 29.2975 u_old = 27.3993
+distacia = 1.89822
+  -- Solve :
+          min 16.8258  max 49.9723
+ u = 30.9821 u_old = 29.2975
+distacia = 1.68456
+  -- Solve :
+          min 18.2353  max 50.9437
+ u = 32.4865 u_old = 30.9821
+distacia = 1.50443
+  -- Solve :
+          min 19.5129  max 51.8042
+ u = 33.8369 u_old = 32.4865
+distacia = 1.35045
+  -- Solve :
+          min 20.6559  max 52.5718
+ u = 35.0541 u_old = 33.8369
+distacia = 1.21719
+  -- Solve :
+          min 21.7083  max 53.2604
+ u = 36.1547 u_old = 35.0541
+distacia = 1.10061
+  -- Solve :
+          min 22.6797  max 53.8807
+ u = 37.1524 u_old = 36.1547
+distacia = 0.997696
+  -- Solve :
+          min 23.5742  max 54.4414
+ u = 38.0586 u_old = 37.1524
+distacia = 0.906175
+  -- Solve :
+          min 24.3966  max 54.9495
+ u = 38.8829 u_old = 38.0586
+distacia = 0.824294
+  -- Solve :
+          min 25.1515  max 55.411
+ u = 39.6336 u_old = 38.8829
+distacia = 0.750683
+  -- Solve :
+          min 25.8438  max 55.8306
+ u = 40.3178 u_old = 39.6336
+distacia = 0.684258
+  -- Solve :
+          min 26.4783  max 56.2128
+ u = 40.942 u_old = 40.3178
+distacia = 0.624138
+  -- Solve :
+          min 27.0594  max 56.5612
+ u = 41.5116 u_old = 40.942
+distacia = 0.569599
+  -- Solve :
+          min 27.5913  max 56.879
+ u = 42.0316 u_old = 41.5116
+distacia = 0.520035
+  -- Solve :
+          min 28.0781  max 57.169
+ u = 42.5065 u_old = 42.0316
+distacia = 0.47493
+  -- Solve :
+          min 28.5235  max 57.4337
+ u = 42.9404 u_old = 42.5065
+distacia = 0.433839
+  -- Solve :
+          min 28.931  max 57.6755
+ u = 43.3368 u_old = 42.9404
+distacia = 0.396374
+  -- Solve :
+          min 29.3036  max 57.8963
+ u = 43.6989 u_old = 43.3368
+distacia = 0.362194
+  -- Solve :
+          min 29.6444  max 58.0981
+ u = 44.0299 u_old = 43.6989
+distacia = 0.330996
+  -- Solve :
+          min 29.956  max 58.2825
+ u = 44.3325 u_old = 44.0299
+distacia = 0.302509
+  -- Solve :
+          min 30.2409  max 58.4509
+ u = 44.6089 u_old = 44.3325
+distacia = 0.27649
+  -- Solve :
+          min 30.5014  max 58.6049
+ u = 44.8617 u_old = 44.6089
+distacia = 0.252722
+  -- Solve :
+          min 30.7396  max 58.7457
+ u = 45.0927 u_old = 44.8617
+distacia = 0.231004
+  -- Solve :
+          min 30.9574  max 58.8743
+ u = 45.3038 u_old = 45.0927
+distacia = 0.211159
+  -- Solve :
+          min 31.1564  max 58.9919
+ u = 45.4968 u_old = 45.3038
+distacia = 0.193022
+  -- Solve :
+          min 31.3385  max 59.0994
+ u = 45.6733 u_old = 45.4968
+distacia = 0.176446
+  -- Solve :
+          min 31.5048  max 59.1976
+ u = 45.8346 u_old = 45.6733
+distacia = 0.161296
+  -- Solve :
+          min 31.657  max 59.2875
+ u = 45.982 u_old = 45.8346
+distacia = 0.147447
+  -- Solve :
+          min 31.796  max 59.3696
+ u = 46.1168 u_old = 45.982
+distacia = 0.134789
+  -- Solve :
+          min 31.9231  max 59.4446
+ u = 46.24 u_old = 46.1168
+distacia = 0.123218
+  -- Solve :
+          min 32.0394  max 59.5132
+ u = 46.3527 u_old = 46.24
+distacia = 0.11264
+  -- Solve :
+          min 32.1456  max 59.5759
+ u = 46.4557 u_old = 46.3527
+distacia = 0.102971
+  -- Solve :
+          min 32.2427  max 59.6333
+ u = 46.5498 u_old = 46.4557
+distacia = 0.0941326
+  -- Solve :
+          min 32.3315  max 59.6857
+ u = 46.6358 u_old = 46.5498
+distacia = 0.0860527
+  -- Solve :
+          min 32.4127  max 59.7336
+ u = 46.7145 u_old = 46.6358
+distacia = 0.0786664
+  -- Solve :
+          min 32.4869  max 59.7774
+ u = 46.7864 u_old = 46.7145
+distacia = 0.0719142
+  -- Solve :
+          min 32.5547  max 59.8174
+ u = 46.8522 u_old = 46.7864
+distacia = 0.0657416
+  -- Solve :
+          min 32.6167  max 59.8541
+ u = 46.9123 u_old = 46.8522
+distacia = 0.0600988
+  -- Solve :
+          min 32.6734  max 59.8875
+ u = 46.9672 u_old = 46.9123
+distacia = 0.0549405
+  -- Solve :
+          min 32.7253  max 59.9181
+ u = 47.0174 u_old = 46.9672
+distacia = 0.0502248
+  -- Solve :
+          min 32.7726  max 59.9461
+ u = 47.0633 u_old = 47.0174
+distacia = 0.045914
+  -- Solve :
+          min 32.8159  max 59.9716
+ u = 47.1053 u_old = 47.0633
+distacia = 0.0419731
+  -- Solve :
+          min 32.8555  max 59.995
+ u = 47.1437 u_old = 47.1053
+distacia = 0.0383705
+  -- Solve :
+          min 32.8917  max 60.0164
+ u = 47.1788 u_old = 47.1437
+distacia = 0.0350772
+  -- Solve :
+          min 32.9248  max 60.0359
+ u = 47.2108 u_old = 47.1788
+distacia = 0.0320665
+  -- Solve :
+          min 32.9551  max 60.0538
+ u = 47.2401 u_old = 47.2108
+distacia = 0.0293142
+  -- Solve :
+          min 32.9827  max 60.0701
+ u = 47.2669 u_old = 47.2401
+distacia = 0.0267981
+  -- Solve :
+          min 33.008  max 60.085
+ u = 47.2914 u_old = 47.2669
+distacia = 0.024498
+  -- Solve :
+          min 33.0311  max 60.0986
+ u = 47.3138 u_old = 47.2914
+distacia = 0.0223954
+  -- Solve :
+          min 33.0522  max 60.1111
+ u = 47.3343 u_old = 47.3138
+distacia = 0.0204731
+  -- Solve :
+          min 33.0715  max 60.1225
+ u = 47.353 u_old = 47.3343
+distacia = 0.0187159
+  -- Solve :
+          min 33.0892  max 60.1329
+ u = 47.3701 u_old = 47.353
+distacia = 0.0171095
+  -- Solve :
+          min 33.1053  max 60.1425
+ u = 47.3858 u_old = 47.3701
+distacia = 0.015641
+  -- Solve :
+          min 33.1201  max 60.1512
+ u = 47.4001 u_old = 47.3858
+distacia = 0.0142985
+  -- Solve :
+          min 33.1336  max 60.1591
+ u = 47.4131 u_old = 47.4001
+distacia = 0.0130713
+  -- Solve :
+          min 33.1459  max 60.1664
+ u = 47.4251 u_old = 47.4131
+distacia = 0.0119494
+  -- Solve :
+          min 33.1572  max 60.1731
+ u = 47.436 u_old = 47.4251
+distacia = 0.0109238
+  -- Solve :
+          min 33.1675  max 60.1792
+ u = 47.446 u_old = 47.436
+distacia = 0.00998616
+  -- Solve :
+          min 33.1769  max 60.1847
+ u = 47.4551 u_old = 47.446
+distacia = 0.00912905
+  -- Solve :
+          min 33.1855  max 60.1898
+ u = 47.4635 u_old = 47.4551
+distacia = 0.0083455
+  -- Solve :
+          min 33.1934  max 60.1944
+ u = 47.4711 u_old = 47.4635
+distacia = 0.0076292
+  -- Solve :
+          min 33.2006  max 60.1987
+ u = 47.4781 u_old = 47.4711
+distacia = 0.00697438
+  -- Solve :
+          min 33.2072  max 60.2026
+ u = 47.4845 u_old = 47.4781
+distacia = 0.00637577
+  -- Solve :
+          min 33.2132  max 60.2061
+ u = 47.4903 u_old = 47.4845
+distacia = 0.00582853
+  -- Solve :
+          min 33.2187  max 60.2094
+ u = 47.4956 u_old = 47.4903
+distacia = 0.00532827
+  -- Solve :
+          min 33.2237  max 60.2123
+ u = 47.5005 u_old = 47.4956
+distacia = 0.00487094
+  -- Solve :
+          min 33.2283  max 60.215
+ u = 47.5049 u_old = 47.5005
+distacia = 0.00445286
+  -- Solve :
+          min 33.2325  max 60.2175
+ u = 47.509 u_old = 47.5049
+distacia = 0.00407067
+  -- Solve :
+          min 33.2363  max 60.2198
+ u = 47.5127 u_old = 47.509
+distacia = 0.00372129
+  -- Solve :
+          min 33.2398  max 60.2219
+ u = 47.5161 u_old = 47.5127
+distacia = 0.00340189
+  -- Solve :
+          min 33.2431  max 60.2238
+ u = 47.5192 u_old = 47.5161
+distacia = 0.0031099
+  -- Solve :
+          min 33.246  max 60.2255
+ u = 47.5221 u_old = 47.5192
+distacia = 0.00284298
+  -- Solve :
+          min 33.2487  max 60.2271
+ u = 47.5247 u_old = 47.5221
+distacia = 0.00259896
+  -- Solve :
+          min 33.2511  max 60.2285
+ u = 47.5271 u_old = 47.5247
+distacia = 0.00237589
+  -- Solve :
+          min 33.2534  max 60.2298
+ u = 47.5292 u_old = 47.5271
+distacia = 0.00217197
+  -- Solve :
+          min 33.2554  max 60.2311
+ u = 47.5312 u_old = 47.5292
+distacia = 0.00198555
+  -- Solve :
+          min 33.2573  max 60.2322
+ u = 47.533 u_old = 47.5312
+distacia = 0.00181513
+  -- Solve :
+          min 33.259  max 60.2332
+ u = 47.5347 u_old = 47.533
+distacia = 0.00165933
+  -- Solve :
+          min 33.2606  max 60.2341
+ u = 47.5362 u_old = 47.5347
+distacia = 0.00151691
+  -- Solve :
+          min 33.262  max 60.2349
+ u = 47.5376 u_old = 47.5362
+distacia = 0.00138672
+  -- Solve :
+          min 33.2633  max 60.2357
+ u = 47.5389 u_old = 47.5376
+distacia = 0.00126769
+  -- Solve :
+          min 33.2645  max 60.2364
+ u = 47.54 u_old = 47.5389
+distacia = 0.00115889
+  -- Solve :
+          min 33.2656  max 60.2371
+ u = 47.5411 u_old = 47.54
+distacia = 0.00105942
+  -- Solve :
+          min 33.2666  max 60.2377
+ u = 47.5421 u_old = 47.5411
+distacia = 0.000968488
+  -- Solve :
+          min 33.2675  max 60.2382
+ u = 47.5429 u_old = 47.5421
+distacia = 0.000885363
+  -- Solve :
+          min 33.2683  max 60.2387
+ u = 47.5437 u_old = 47.5429
+distacia = 0.000809372
+  -- Solve :
+          min 33.2691  max 60.2391
+ u = 47.5445 u_old = 47.5437
+distacia = 0.000739903
+  -- Solve :
+          min 33.2698  max 60.2395
+ u = 47.5452 u_old = 47.5445
+distacia = 0.000676397
+  -- Solve :
+          min 33.2704  max 60.2399
+ u = 47.5458 u_old = 47.5452
+distacia = 0.000618341
+  -- Solve :
+          min 33.271  max 60.2403
+ u = 47.5463 u_old = 47.5458
+distacia = 0.000565269
+  -- Solve :
+          min 33.2716  max 60.2406
+ u = 47.5469 u_old = 47.5463
+distacia = 0.000516752
+  -- Solve :
+          min 33.272  max 60.2409
+ u = 47.5473 u_old = 47.5469
+distacia = 0.000472399
+  -- Solve :
+          min 33.2725  max 60.2411
+ u = 47.5478 u_old = 47.5473
+distacia = 0.000431852
+  -- Solve :
+          min 33.2729  max 60.2414
+ u = 47.5482 u_old = 47.5478
+distacia = 0.000394786
+  -- Solve :
+          min 33.2733  max 60.2416
+ u = 47.5485 u_old = 47.5482
+distacia = 0.000360902
+  -- Solve :
+          min 33.2736  max 60.2418
+ u = 47.5489 u_old = 47.5485
+distacia = 0.000329925
+  -- Solve :
+          min 33.2739  max 60.242
+ u = 47.5492 u_old = 47.5489
+distacia = 0.000301608
+  -- Solve :
+          min 33.2742  max 60.2421
+ u = 47.5494 u_old = 47.5492
+distacia = 0.000275721
+  -- Solve :
+          min 33.2745  max 60.2423
+ u = 47.5497 u_old = 47.5494
+distacia = 0.000252055
+  -- Solve :
+          min 33.2747  max 60.2424
+ u = 47.5499 u_old = 47.5497
+distacia = 0.000230421
+  -- Solve :
+          min 33.2749  max 60.2426
+ u = 47.5501 u_old = 47.5499
+distacia = 0.000210644
+  -- Solve :
+          min 33.2751  max 60.2427
+ u = 47.5503 u_old = 47.5501
+distacia = 0.000192564
+  -- Solve :
+          min 33.2753  max 60.2428
+ u = 47.5505 u_old = 47.5503
+distacia = 0.000176037
+  -- Solve :
+          min 33.2755  max 60.2429
+ u = 47.5507 u_old = 47.5505
+distacia = 0.000160927
+  -- Solve :
+          min 33.2756  max 60.243
+ u = 47.5508 u_old = 47.5507
+distacia = 0.000147115
+  -- Solve :
+          min 33.2758  max 60.2431
+ u = 47.5509 u_old = 47.5508
+distacia = 0.000134488
+  -- Solve :
+          min 33.2759  max 60.2431
+ u = 47.5511 u_old = 47.5509
+distacia = 0.000122945
+  -- Solve :
+          min 33.276  max 60.2432
+ u = 47.5512 u_old = 47.5511
+distacia = 0.000112392
+  -- Solve :
+          min 33.2761  max 60.2433
+ u = 47.5513 u_old = 47.5512
+distacia = 0.000102746
+  -- Solve :
+          min 33.2762  max 60.2433
+ u = 47.5514 u_old = 47.5513
+distacia = 9.3927e-05
+times: compile 0.326s, execution 18.458s,  mpirank:0
+ ######## We forget of deleting   4539 Nb pointer,   0Bytes  ,  mpirank 0, memory leak =0
+ CodeAlloc : nb ptr  4184,  size :516624 mpirank: 0
+Ok: Normal End
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\ejercicio_2_EDP_evolutivo.edp

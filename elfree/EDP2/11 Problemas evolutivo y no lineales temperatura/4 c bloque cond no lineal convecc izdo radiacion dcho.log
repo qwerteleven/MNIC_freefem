@@ -1,0 +1,227 @@
+-- FreeFem++ v4.1 (Sat, Nov 13, 2021  7:40:01 PM - git v4.10)
+   file : C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\4 c bloque cond no lineal convecc izdo radiacion dcho.edp
+ Load: lg_fem lg_mesh lg_mesh3 eigenvalue
+    1 : /* CALENTAMIENTO INTERNO DE UN BLOQUE DE CONSTRUCCION CON 3 // HUECOS DE AIRE SOMETIDO A RADIACION TERMICA EN LADO DERECHO QUE EL AIRE ESTA IRRADIANDO A 700 º C.
+    2 :
+    3 : EL LADO IZQUIERDO CONSIDERAMOS AIRE A TEMPERATURA DE 20º C
+    4 :
+    5 : LOS RESTANTES LADOS ESTÃN EN CONTACTO CON OTROS BLOQUES.
+    6 :
+    7 : PROBLEMA NO LINEAL POR CONDUCTIVIDAD DEPENDIENTE DE LA TEMPERATURA EN LAS PAREDES  ADEMAS DEL FLUJO DE RADIACION 
+    8 :
+    9 : CONSIDERAMOS EL PROBLEMA TRANSITORIO O EVOLUTIVO EN EL TIEMPO HASTA LLEGAR A LA SOLUCION ESTACIONARIA
+   10 :
+   11 : */
+   12 :
+   13 : border a1 (t=0.,0.025) {x=t;y=0.;label=3;};
+   14 : border a2(t=0.,0.005) {x=0.025;y=t;label=3;};
+   15 : border a3 (t=0.025,0.175) {x=t;y=0.005;label=3;};
+   16 : border a4 (t=0.005,0.) {x=0.175;y=t;label=3;};
+   17 : border a5 (t=0.175,0.20) {x=t;y=0.;label=3;};
+   18 :
+   19 : border a6 (t=0,0.50) {x=0.20;y=t;label=2;}; // CONTORMO LADO DCHO
+   20 :
+   21 : border a7 (t=0.20,0.175) {x=t;y=0.50;label=3;};
+   22 : border a8 (t=0.5,0.495) {x=0.175;y=t;label=3;};
+   23 : border a9 (t=0.175,0.025) {x=t;y=0.495;label=3;};
+   24 : border a10 (t=0.495,0.50) {x=0.025;y=t;label=3;};
+   25 : border a11 (t=0.025,0.) {x=t;y=0.50;label=3;};
+   26 :
+   27 : border a12 (t=0.50,0.) {x=0;y=t;label=1;};    //Lado izquierdo del bloque que estÃ¡ a temperatura impuesta (condiciÃ³n Dirichlet)
+   28 :
+   29 :
+   30 : border b1 (t=0.025,0.175) {x=t;y=0.03;label=3;};
+   31 : border b2 (t=0.03,0.16) {x=0.175;y=t;label=3;};
+   32 : border b3 (t=0.175,0.025) {x=t;y=0.16;label=3;};
+   33 : border b4 (t=0.16,0.03) {x=0.025;y=t;label=3;};
+   34 :
+   35 : border c1 (t=0.025,0.175) {x=t;y=0.185;label=3;};
+   36 : border c2 (t=0.185,0.315) {x=0.175;y=t;label=3;};
+   37 : border c3 (t=0.175,0.025) {x=t;y=0.315;label=3;};
+   38 : border c4 (t=0.315,0.185) {x=0.025;y=t;label=3;};
+   39 :
+   40 : border d1 (t=0.025,0.175) {x=t;y=0.34;label=3;};
+   41 : border d2 (t=0.34,0.47) {x=0.175;y=t;label=3;};
+   42 : border d3 (t=0.175,0.025) {x=t;y=0.47;label=3;};
+   43 : border d4 (t=0.47,0.34) {x=0.025;y=t;label=3;};
+   44 :
+   45 : int n=80;
+   46 : mesh malla = buildmesh(a1(n/4)+a2(n/8)+a3(n)+a4(n/8)+a5(n/4)+a6(2*n)+
+   47 :                        a7(n/4)+a8(n/8)+a9(n)+a10(n/8)+a11(n/4)+a12(2*n)+
+   48 :                        b1(n/2)+b2(n/2)+b3(n/2)+b4(n/2)+
+   49 :                        c1(n/2)+c2(n/2)+c3(n/2)+c4(n/2)+
+   50 :                        d1(n/2)+d2(n/2)+d3(n/2)+d4(n/2));
+   51 : plot(malla,wait=1);
+   52 :
+   53 : //Definimos el problema que queremos resolver
+   54 : //-------------------------------------------
+   55 : fespace Vh(malla,P1);
+   56 :
+   57 : Vh reg=region;
+   58 : int material1 = reg(0.01,0.01);
+   59 : /* todos los puntos (x,y) que tienen los mismos contornos que los contornos del punto x=0.01  y=0.01  forman el
+material 1 */
+   60 :
+   61 : int aire1 = reg(0.10,0.095);
+   62 : int aire2 = reg(0.10,0.25);
+   63 : int aire3 = reg(0.10,0.405);
+   64 :
+   65 : plot (reg, wait=1,fill=1);
+   66 :
+   67 : Vh u,v,uold, uoldt,uu,kk,B,uc,error;
+   68 :
+   69 : /* despues haremos :
+   70 :  kk = k1(u)*(region==material1)
+   71 :       + k2(u)*(region==aire1)
+   72 :       + k2(u)*(region==aire2)
+   73 :       + k2(u)*(region==aire3);
+   74 :
+   75 :  k1 y k2 se evaluaran en u calculada en la iteracion anterior que se denomina uold
+   76 : esto es linealizacion segun Metodo de Punto Fijo */
+   77 :
+   78 : // Conductividad termica del picon-hormigon: aproximadamente 0.38 a 20ºC y 0.5 a 700 ºC
+   79 :
+   80 : func real k1(real T) { return (0.3764705 + 0.00017647059*T);}
+   81 :
+   82 : func real k2(real T)
+   83 : { return (0.0244706 +(0.00006)*(T-273.15));}
+   84 :
+   85 : real sigma = 5.6704*1e-8; //Constante de Stefan-Boltzmann [W/m2.K4]
+   86 : real emisivity = 0.8;
+   87 :
+   88 : real uf = 700 + 273.15; //Temperatura UR del foco caliente [ÂºK]
+   89 : real u0 = 20 + 273.15;  //Condicion Dirichlet del contorno exterior (cuadrado) [ÂºK]
+   90 :
+   91 : //  luego haremos B = (u^2+uf^2)*(u+uf) segun apuntes ver ppt
+   92 :
+   93 : real hc=60; //W/m2 k // TEST PARA QUE RESULTE TEMP A LA IZDA CASI LA TEMP AIRE INTERIOR  DE 20 ºC
+   94 : real epsilon=1.e-12;
+   95 :
+   96 : real dt=0.1;
+   97 : real T=1.;
+   98 :
+   99 :
+  100 : real den,cap,a;
+  101 : den=1; cap=1; // con el objetivo de obtener de forma rapida la solucion estacionaria
+  102 :
+  103 : a=den*cap;
+  104 : uoldt=293.15;
+  105 :
+  106 : // Temperatura en kelvin
+  107 :
+  108 :
+  109 : problem calor (u,v) =
+  110 : int2d(malla)(epsilon*u*v)+
+  111 : int2d (malla)(a*u*v/dt)-int2d(malla)(a*uoldt*v/dt)
+  112 :
+  113 : +int2d(malla)(kk*dx(u)*dx(v)+kk*dy(u)*dy(v))
+  114 :
+  115 : + int1d(malla,2) (sigma*emisivity*B*u*v)
+  116 : - int1d(malla,2) (sigma*emisivity*B*uf*v)
+  117 :
+  118 : + int1d(malla,1) (hc*u*v) - int1d(malla,1) (hc*u0*v);
+  119 :
+  120 : //+ on(1,u=u0);
+  121 :
+  122 :
+  123 : uoldt=u0;
+  124 :
+  125 : for(real t=0;t<T;t+=dt) // bucle de iteraciones en el tiempo t desde t=0 hasta t=T
+  126 :
+  127 : {
+  128 :
+  129 : uold=u0;
+  130 : real ErrorL2 = 1.;
+  131 : real ErrorH1 = 1.;
+  132 :
+  133 : while(sqrt(ErrorL2+ErrorH1) > 1.e-6)
+  134 : {
+  135 :         //Conductividad térmica
+  136 :         kk = k1(uold-273.15)*(region==material1)
+  137 :            + k2(uold)*(region==aire1)
+  138 :            + k2(uold)*(region==aire2)
+  139 :            + k2(uold)*(region==aire3);
+  140 :
+  141 :         B = (uold^2 + uf^2)*(uold+uf);
+  142 :         calor;
+  143 :         uc = u-273.15;
+  144 :         plot(uc, value=1);
+  145 :         error=u-uold;
+  146 :         ErrorH1 = int2d(malla)(dx(error)^2+dy(error)^2);
+  147 :         ErrorL2 = int2d(malla)(error^2);
+  148 :         cout << " Error seminorma H1 = " <<sqrt( ErrorH1) <<endl;
+  149 :         cout << " Error L2 = " << sqrt(ErrorL2) <<endl;
+  150 :         cout << " Error norma H1 = " << sqrt(ErrorL2+ErrorH1) <<endl;
+  151 :         uold=u;
+  152 : }
+  153 :
+  154 : uoldt=uold;
+  155 :
+  156 : x=19.9;
+  157 : y=0.1;
+  158 : uu=u(x,y); // temperatura en punto (x,y)
+  159 : cout << " u = " <<uu<<endl; // plotea en pantalla
+  160 :
+  161 :
+  162 :
+  163 :
+  164 :
+  165 : }
+  166 :
+  167 :
+  168 :
+  169 :  sizestack + 1024 =7920  ( 6896 )
+ 
+  --  mesh:  Nb of Triangles =  20302, Nb of Vertices 10451
+  -- Solve :
+          min 294.799  max 963.916
+ Error seminorma H1 = 1277.09
+ Error L2 = 109.026
+ Error norma H1 = 1281.74
+  -- Solve :
+          min 295.489  max 969.085
+ Error seminorma H1 = 329.364
+ Error L2 = 13.2597
+ Error norma H1 = 329.631
+  -- Solve :
+          min 295.629  max 969.028
+ Error seminorma H1 = 29.3914
+ Error L2 = 0.947458
+ Error norma H1 = 29.4066
+  -- Solve :
+          min 295.642  max 969.025
+ Error seminorma H1 = 2.21591
+ Error L2 = 0.0532233
+ Error norma H1 = 2.21654
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 0.191312
+ Error L2 = 0.00619161
+ Error norma H1 = 0.191413
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 0.017329
+ Error L2 = 0.0003883
+ Error norma H1 = 0.0173333
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 0.00137042
+ Error L2 = 4.20524e-05
+ Error norma H1 = 0.00137107
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 0.000130973
+ Error L2 = 3.11975e-06
+ Error norma H1 = 0.00013101
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 1.01877e-05
+ Error L2 = 2.8444e-07
+ Error norma H1 = 1.01917e-05
+  -- Solve :
+          min 295.643  max 969.026
+ Error seminorma H1 = 9.66109e-07
+ Error L2 = 2.50707e-08
+ Error norma H1 = 9.66434e-07
+ u = 966.66
+ try getConsole C:\Users\admin\Desktop\github_proyect\MNIC_freefem\elfree\EDP2\11 Problemas evolutivo y no lineales temperatura\4 c bloque cond no lineal convecc izdo radiacion dcho.edp

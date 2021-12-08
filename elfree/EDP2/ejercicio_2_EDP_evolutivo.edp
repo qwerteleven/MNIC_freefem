@@ -1,72 +1,119 @@
-// caso estacionario
+// caso evolutivo
 
-int n=1;
-//int m=140;
+
+// ****************** definicion del espacio del problema **********************
+
+int n=10;
+
+real t, T = 1., dt = 0.01; // variables para la derivacion respecto del tiempo
 
 border a (t=10, 5) {x=t;y=6;label=2;};   // region de aluminio
 
 border b (t=0, 6)  {x=10;y=t;label=1;};  // conveccion de fluido
 
-border c (t=0, 10) {x=t;y=0;label=2;};
-border d (t=3, 0) {x=0;y=t;label=2;};
+border c (t=0, 10) {x=t;y=0;label=2;};   // conveccion aire
+border d (t=3, 0) {x=0;y=t;label=2;};    // conveccion aire
 
-border e (t=0, 5) {x=t;y=3;label=3;}; // interface material
-border f (t=3, 6) {x=5;y=t;label=3;};
+border e (t=0, 5) {x=t;y=3;label=3;};    // interface material
+border f (t=3, 6) {x=5;y=t;label=3;};    // interface material
 
-border g (t=6, 3) {x=0;y=t;label=2;}; // region de cobre
-border h (t=5, 0) {x=t;y=6;label=2;};
+border g (t=6, 3) {x=0;y=t;label=2;};    // region de cobre
+border h (t=5, 0) {x=t;y=6;label=2;};    // conveccion aire
 
 
 mesh malla = buildmesh(a(5*n)+b(6*n)+c(10*n)+d(3*n)+e(5*n)+f(3*n)+g(3*n)+h(5*n));
  
 plot(malla,wait=1);
 
-fespace Ph(malla,P1);
-Ph reg=region;                // a continuacion decimos dos regiones la region cobre y la region aluminio
 
-int cobre =    reg(0.5, 5.5);  // define una region que es de COBRE 
+
+//***************** definicion de regiones *************************
+
+fespace Ph(malla,P1);
+Ph reg=region;   
+
+int cobre    = reg(0.5, 5.5);  // define una region que es de COBRE 
 int aluminio = reg(5.5, 5.5);  // define una region que es de ALUMINIO 
 
-plot (reg,fill=1);
-
-real k1,k2;
-k1=385.0;         //conductividad termica en el subdominio1     COBRE    (unidades es Watio/(m K)
-k2=205.0;		   //conductividad termica en el subdominio2     ALUMINIO (unidades es Watio/(m K)
+plot (reg, fill=1);
 
 
-fespace Vh(malla, P1); // polinomios de interpola de grado uno
-
-/* aconsejable cuando hay cmbio de materiales que implican dvalores numericos muy ditintos de parametros a evaluar en las integrales*/
-
-Vh u,k,v,uu;
-
-real hc=60.; //Coeficiente de convecci�n y temperatura del fluido, p.e. aire, dentro de la circunferencia
-real uf=80.; // temperatura aire o agua o fluido dentro del orifico, es decir en contacto con contorno label =2
-
-real hc2=14.; //Coeficiente de convecci�n y temperatura del fluido, p.e. aire, en el exterior del cuadrado
-real uf2=20.; // temperatura aire exterior
+real k1,k2; // temperatura 23ºC
+k1=380.0;   // conductividad termica en el subdominio1  COBRE    (unidades es Watio/(m K)
+k2=237.0;   // conductividad termica en el subdominio2  ALUMINIO (unidades es Watio/(m K)
 
 
-real epsilon=0.00000001;
 
-problem Calor(u,v) =
-int2d(malla) (epsilon*u*v)
-+int2d (malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))
+//******************* definicion de los elemtos externos al material **************************
 
-+ int1d(malla,1) (hc*u*v)  - int1d(malla,1) (hc*uf*v) // conveccion fluido
+fespace Vh(malla, P1); 
 
-+ int1d(malla,2) (hc2*u*v) - int1d(malla,2) (hc2*uf2*v) // conveccion aire
+Vh told, uold, u,k,v,uu;
 
- + on (1, u=80)
- + on (2, u=20);
+real hc=60.; // Coeficiente de conveccion fluido
+real uf=80.; // temperatura fluido
+
+real hc2=14.; // Coeficiente de conveccion aire
+real uf2=20.; // temperatura aire
+
+
+
+//***************** definicion del problema **********************
+
+real epsilon = 1e-8; 
+told=0;              // temperatura de la que parte el material
+
+
+problem calor(u, v) =
+int2d(malla)(epsilon*u*v)                                // para asegurar la unicidad de solucion, al carecer de condiciones diricher
+
++ int2d(malla) (u*v / dt) - int2d(malla)(told*v / dt)    // derivada respecto del tiempo
+
++ int2d (malla) (k*dx(u)*dx(v)+k*dy(u)*dy(v))
+
++ int1d(malla,1) (hc*u*v)  - int1d(malla,1) (hc*uf*v)    // conveccion fluido
++ int1d(malla,2) (hc2*u*v) - int1d(malla,2) (hc2*uf2*v); // conveccion aire
+
+
+k = k1*(region==cobre)+k2*(region==aluminio); // asignacion de de material a las regiones
+
 
  
-k = k1*(region==cobre)+k2*(region==aluminio);
- 
-Calor;
-   
+//************ resolucion del problema *****************
+
+real tolerror = 1e-4;
+
+uold = 1; // valor arbitrario para asegurar la exactiud de la solucion
+
 x=7.0;
-y=3.0;
-uu=u(x, y); // temperatura en la interfase cobre-aluminio
-cout << " u = " << uu << endl; // plotea en pantalla
-plot(u,value=1);
+y=3.0; 
+
+
+while(sqrt((uold - u(x, y))^2) > tolerror) { 
+
+    uold = u(x, y);
+
+    calor; // problema 
+    told=u;
+
+    plot(told, cmm=" tiempo ="+t, nbiso=30, value=1);
+
+    uu = u(x, y); // temperatura en punto (x, y)
+    cout << " u = " << uu << " u_old = " << uold << endl; // plotea en pantalla
+
+    cout << "error respecto al valor anterior = " << sqrt((uold - u(x, y))^2) << endl;
+
+    t+=dt;
+} 
+
+ 
+// **************** visualizacion de las direccion de temperatura **************************
+
+Vh qx = -k*dx(u);
+Vh qy = -k*dy(u);
+
+// qx flujo de calor en direccion x
+// qy flujo de calor en direccion y
+
+plot([qx,qy], wait=1, fill=1);
+
